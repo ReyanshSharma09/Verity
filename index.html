@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafePay - Fraud Detection App</title>
+    <title>SafePay - AI Fraud Detection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -23,12 +23,12 @@
             --bg-white: #ffffff;
             --text-dark: #1e293b;
             --text-gray: #64748b;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         body {
-            background: var(--bg-light);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -38,14 +38,14 @@
 
         .phone-container {
             width: 100%;
-            max-width: 400px;
-            height: 750px;
+            max-width: 420px;
+            height: 800px;
             background: var(--bg-white);
-            border-radius: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 45px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
             overflow: hidden;
             position: relative;
-            border: 8px solid #1e293b;
+            border: 10px solid #1e293b;
         }
 
         .phone-notch {
@@ -64,8 +64,9 @@
             display: none;
             height: 100%;
             overflow-y: auto;
-            padding-bottom: 80px;
+            padding-bottom: 85px;
             animation: fadeIn 0.3s ease;
+            background: var(--bg-light);
         }
 
         .screen.active {
@@ -77,11 +78,21 @@
             to { opacity: 1; transform: translateX(0); }
         }
 
-        /* Header Styles */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Header */
         .header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            padding: 45px 20px 20px;
+            padding: 45px 20px 25px;
             position: sticky;
             top: 0;
             z-index: 50;
@@ -96,12 +107,44 @@
         .header h1 {
             font-size: 1.5rem;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-icons {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .header-icons i {
-            margin-left: 15px;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .header-icons i:hover {
+            transform: scale(1.1);
+        }
+
+        .notification-badge {
+            position: relative;
+        }
+
+        .notification-badge::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger);
+            border-radius: 50%;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .header-back {
@@ -111,6 +154,9 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
         .header-back i {
@@ -123,7 +169,7 @@
             font-weight: 600;
         }
 
-        /* Content Area */
+        /* Content */
         .content {
             padding: 20px;
         }
@@ -136,6 +182,18 @@
             border-radius: 20px;
             margin-bottom: 20px;
             box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
         }
 
         .balance-label {
@@ -145,15 +203,31 @@
         }
 
         .balance-amount {
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             font-weight: 700;
         }
 
         .balance-card-number {
             margin-top: 20px;
             font-size: 0.9rem;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             opacity: 0.8;
+        }
+
+        /* ML Status Badge */
+        .ml-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 15px;
+        }
+
+        .ml-badge i {
+            color: #10b981;
         }
 
         /* Alert Banner */
@@ -161,15 +235,21 @@
             background: linear-gradient(135deg, #fef3c7, #fde68a);
             border: 2px solid var(--warning);
             border-radius: 15px;
-            padding: 15px;
+            padding: 18px;
             margin-bottom: 20px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s;
+            animation: slideUp 0.5s ease;
         }
 
         .alert-banner:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .alert-banner.danger {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border-color: var(--danger);
         }
 
         .alert-banner-header {
@@ -180,35 +260,53 @@
         }
 
         .alert-banner-header i {
-            color: var(--warning);
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+        }
+
+        .alert-banner.danger .alert-banner-header i {
+            color: var(--danger);
         }
 
         .alert-banner-header span {
-            font-weight: 600;
-            color: #92400e;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .alert-banner.danger .alert-banner-header span {
+            color: #991b1b;
         }
 
         .alert-banner p {
-            color: #a16207;
+            color: #92400e;
             font-size: 0.9rem;
         }
 
+        .alert-banner.danger p {
+            color: #991b1b;
+        }
+
         .alert-banner-btn {
-            display: inline-block;
-            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
             background: var(--warning);
             color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
             font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .alert-banner.danger .alert-banner-btn {
+            background: var(--danger);
         }
 
         /* Section Title */
         .section-title {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-dark);
             margin-bottom: 15px;
             display: flex;
@@ -220,21 +318,23 @@
             color: var(--primary);
             font-size: 0.9rem;
             cursor: pointer;
+            font-weight: 500;
         }
 
         /* Transaction Card */
         .transaction-card {
             background: white;
-            border-radius: 15px;
-            padding: 15px;
+            border-radius: 16px;
+            padding: 16px;
             margin-bottom: 12px;
             box-shadow: var(--shadow);
             display: flex;
             align-items: center;
             gap: 15px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            animation: slideUp 0.4s ease;
         }
 
         .transaction-card:hover {
@@ -243,26 +343,26 @@
         }
 
         .transaction-card.danger {
-            border-left: 4px solid var(--danger);
+            border-color: var(--danger);
             background: linear-gradient(135deg, #fef2f2, white);
         }
 
         .transaction-card.warning {
-            border-left: 4px solid var(--warning);
+            border-color: var(--warning);
         }
 
         .transaction-card.success {
-            border-left: 4px solid var(--success);
+            border-color: var(--success);
         }
 
         .transaction-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
         }
 
         .transaction-icon.danger {
@@ -287,7 +387,8 @@
         .transaction-name {
             font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 3px;
+            margin-bottom: 4px;
+            font-size: 1rem;
         }
 
         .transaction-meta {
@@ -302,14 +403,16 @@
         .transaction-amount .amount {
             font-weight: 700;
             color: var(--text-dark);
+            font-size: 1.1rem;
         }
 
         .transaction-amount .status {
             font-size: 0.75rem;
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 20px;
             margin-top: 5px;
             display: inline-block;
+            font-weight: 600;
         }
 
         .status.danger {
@@ -331,68 +434,62 @@
         .fraud-header {
             background: linear-gradient(135deg, var(--danger), #dc2626);
             color: white;
-            padding: 45px 20px 30px;
+            padding: 50px 20px 35px;
             text-align: center;
         }
 
         .fraud-header i.main-icon {
-            font-size: 3rem;
+            font-size: 4rem;
             margin-bottom: 15px;
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
         .fraud-header h2 {
-            font-size: 1.4rem;
-            margin-bottom: 5px;
-        }
-
-        .fraud-header p {
-            opacity: 0.9;
-            font-size: 0.9rem;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
         }
 
         .fraud-details {
             background: white;
-            margin: -20px 20px 20px;
-            border-radius: 20px;
-            padding: 20px;
+            margin: -25px 20px 20px;
+            border-radius: 25px;
+            padding: 25px;
             box-shadow: var(--shadow-lg);
         }
 
         .fraud-merchant {
             text-align: center;
             padding-bottom: 20px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid #e2e8f0;
             margin-bottom: 20px;
         }
 
         .fraud-merchant h3 {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             color: var(--text-dark);
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .fraud-merchant .location {
             color: var(--text-gray);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
 
         .fraud-merchant .amount {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: var(--danger);
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
         .fraud-merchant .time {
             color: var(--text-gray);
-            font-size: 0.85rem;
-            margin-top: 5px;
+            font-size: 0.9rem;
+            margin-top: 8px;
         }
 
         /* Risk Score */
@@ -403,21 +500,28 @@
         .risk-score-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .risk-score-header span {
             font-weight: 600;
             color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .risk-score-header .score {
-            color: var(--danger);
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
+        .risk-score-header .score.danger { color: var(--danger); }
+        .risk-score-header .score.warning { color: var(--warning); }
+        .risk-score-header .score.success { color: var(--success); }
+
         .risk-bar {
-            height: 10px;
+            height: 12px;
             background: #e2e8f0;
             border-radius: 10px;
             overflow: hidden;
@@ -434,7 +538,7 @@
         }
 
         .risk-bar-fill.warning {
-            background: linear-gradient(90deg, var(--success), var(--warning));
+            background: linear-gradient(90deg, #fcd34d, var(--warning));
         }
 
         .risk-bar-fill.success {
@@ -445,16 +549,18 @@
         .why-flagged {
             background: #fef2f2;
             border-radius: 15px;
-            padding: 15px;
+            padding: 18px;
             margin-bottom: 20px;
+            border: 1px solid #fecaca;
         }
 
         .why-flagged h4 {
             color: var(--danger);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 1rem;
         }
 
         .why-flagged ul {
@@ -462,16 +568,36 @@
         }
 
         .why-flagged li {
-            padding: 8px 0;
+            padding: 10px 0;
             color: var(--text-dark);
             font-size: 0.9rem;
             display: flex;
-            align-items: center;
-            gap: 10px;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid #fecaca;
+        }
+
+        .why-flagged li:last-child {
+            border-bottom: none;
         }
 
         .why-flagged li i {
             color: var(--danger);
+            margin-top: 2px;
+        }
+
+        .why-flagged li .factor-text {
+            flex: 1;
+        }
+
+        .why-flagged li .factor-title {
+            font-weight: 600;
+        }
+
+        .why-flagged li .factor-detail {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-top: 2px;
         }
 
         /* Action Buttons */
@@ -483,12 +609,12 @@
         }
 
         .btn {
-            padding: 16px 24px;
-            border-radius: 12px;
+            padding: 18px 24px;
+            border-radius: 14px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
             border: none;
             display: flex;
             align-items: center;
@@ -496,24 +622,26 @@
             gap: 10px;
         }
 
+        .btn:active {
+            transform: scale(0.98);
+        }
+
         .btn-success {
-            background: var(--success);
+            background: linear-gradient(135deg, var(--success), #059669);
             color: white;
         }
 
         .btn-success:hover {
-            background: #059669;
-            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
         }
 
         .btn-danger {
-            background: var(--danger);
+            background: linear-gradient(135deg, var(--danger), #dc2626);
             color: white;
         }
 
         .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
         }
 
         .btn-outline {
@@ -528,12 +656,8 @@
         }
 
         .btn-primary {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
         }
 
         .btn-secondary {
@@ -541,15 +665,11 @@
             color: var(--text-dark);
         }
 
-        /* Risk Analysis Screen */
-        .risk-breakdown {
-            margin-bottom: 20px;
-        }
-
+        /* Risk Analysis */
         .risk-item {
             background: white;
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 14px;
+            padding: 18px;
             margin-bottom: 12px;
             box-shadow: var(--shadow);
         }
@@ -558,19 +678,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .risk-item-header .label {
             font-weight: 600;
             color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .risk-item-header .percentage {
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
 
         .risk-item-header .percentage.danger {
@@ -591,13 +714,13 @@
         .risk-item p {
             font-size: 0.85rem;
             color: var(--text-gray);
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         /* Comparison Box */
         .comparison-box {
             background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            border-radius: 15px;
+            border-radius: 18px;
             padding: 20px;
             margin-bottom: 20px;
         }
@@ -613,7 +736,7 @@
         .comparison-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #bfdbfe;
         }
 
@@ -621,133 +744,15 @@
             border-bottom: none;
         }
 
-        .comparison-row .label {
-            color: var(--text-gray);
-        }
-
-        .comparison-row .value {
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-
         .comparison-row .value.danger {
             color: var(--danger);
-        }
-
-        /* Block Confirmation */
-        .confirm-header {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .confirm-header .icon {
-            width: 80px;
-            height: 80px;
-            background: #fee2e2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-
-        .confirm-header .icon i {
-            font-size: 2.5rem;
-            color: var(--danger);
-        }
-
-        .confirm-header h2 {
-            color: var(--text-dark);
-            margin-bottom: 10px;
-        }
-
-        .confirm-header p {
-            color: var(--text-gray);
-        }
-
-        .confirm-details {
-            background: #f8fafc;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 0 20px 20px;
-        }
-
-        .confirm-details h4 {
-            text-align: center;
-            color: var(--text-dark);
-            margin-bottom: 5px;
-        }
-
-        .confirm-details p {
-            text-align: center;
-            color: var(--text-gray);
-            font-size: 0.9rem;
-        }
-
-        .confirm-details .amount {
-            text-align: center;
-            font-size: 1.8rem;
             font-weight: 700;
-            color: var(--danger);
-            margin: 10px 0;
         }
 
-        .what-happens {
-            padding: 0 20px 20px;
-        }
-
-        .what-happens h4 {
-            color: var(--text-dark);
-            margin-bottom: 15px;
-        }
-
-        .what-happens-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 0;
-        }
-
-        .what-happens-item i {
-            color: var(--success);
-            font-size: 1.2rem;
-        }
-
-        .what-happens-item span {
-            color: var(--text-dark);
-        }
-
-        .checkbox-group {
-            padding: 0 20px 20px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            background: white;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-        }
-
-        .checkbox-item input {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--primary);
-        }
-
-        .checkbox-item label {
-            color: var(--text-dark);
-            cursor: pointer;
-        }
-
-        /* Support Screen */
+        /* Support Cards */
         .support-card {
             background: white;
-            border-radius: 15px;
+            border-radius: 16px;
             padding: 20px;
             margin-bottom: 15px;
             box-shadow: var(--shadow);
@@ -755,94 +760,27 @@
             align-items: center;
             gap: 15px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
 
         .support-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: var(--shadow-lg);
         }
 
         .support-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
         }
 
-        .support-icon.chat {
-            background: #dbeafe;
-            color: var(--primary);
-        }
-
-        .support-icon.call {
-            background: #d1fae5;
-            color: var(--success);
-        }
-
-        .support-icon.report {
-            background: #fee2e2;
-            color: var(--danger);
-        }
-
-        .support-details h4 {
-            color: var(--text-dark);
-            margin-bottom: 3px;
-        }
-
-        .support-details p {
-            color: var(--text-gray);
-            font-size: 0.85rem;
-        }
-
-        .support-card i.arrow {
-            color: var(--text-gray);
-        }
-
-        .faq-section h4 {
-            color: var(--text-dark);
-            margin-bottom: 15px;
-        }
-
-        .faq-item {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-        }
-
-        .faq-item:hover {
-            background: #f8fafc;
-        }
-
-        .security-badge {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .security-badge i {
-            font-size: 2rem;
-            color: var(--success);
-            margin-bottom: 10px;
-        }
-
-        .security-badge h4 {
-            color: #065f46;
-            margin-bottom: 5px;
-        }
-
-        .security-badge p {
-            color: #047857;
-            font-size: 0.85rem;
-        }
+        .support-icon.chat { background: #dbeafe; color: var(--primary); }
+        .support-icon.call { background: #d1fae5; color: var(--success); }
+        .support-icon.report { background: #fee2e2; color: var(--danger); }
 
         /* Bottom Navigation */
         .bottom-nav {
@@ -853,7 +791,7 @@
             background: white;
             display: flex;
             justify-content: space-around;
-            padding: 15px 0;
+            padding: 18px 0;
             border-top: 1px solid #e2e8f0;
             z-index: 100;
         }
@@ -865,7 +803,7 @@
             gap: 5px;
             cursor: pointer;
             color: var(--text-gray);
-            transition: color 0.2s;
+            transition: all 0.2s;
         }
 
         .nav-item.active {
@@ -873,11 +811,136 @@
         }
 
         .nav-item i {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
         }
 
         .nav-item span {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            animation: scaleIn 0.5s ease;
+        }
+
+        .success-icon.green {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .success-icon.red {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-icon i {
+            font-size: 3.5rem;
+            color: white;
+        }
+
+        .success-screen h2 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 1.6rem;
+        }
+
+        .success-screen p {
+            color: var(--text-gray);
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-dark);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            margin-top: 15px;
+            color: var(--text-gray);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--text-gray);
         }
 
         /* Filter Tabs */
@@ -890,15 +953,16 @@
         }
 
         .filter-tab {
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: #e2e8f0;
+            padding: 10px 18px;
+            border-radius: 25px;
+            background: white;
             color: var(--text-gray);
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.2s;
+            box-shadow: var(--shadow);
         }
 
         .filter-tab.active {
@@ -906,24 +970,16 @@
             color: white;
         }
 
-        .filter-tab:hover:not(.active) {
-            background: #cbd5e1;
-        }
-
-        /* Search Bar */
+        /* Search */
         .search-bar {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             background: white;
-            border-radius: 12px;
-            padding: 12px 15px;
+            border-radius: 14px;
+            padding: 14px 18px;
             margin-bottom: 20px;
             box-shadow: var(--shadow);
-        }
-
-        .search-bar i {
-            color: var(--text-gray);
         }
 
         .search-bar input {
@@ -931,11 +987,6 @@
             outline: none;
             flex: 1;
             font-size: 1rem;
-            color: var(--text-dark);
-        }
-
-        .search-bar input::placeholder {
-            color: #94a3b8;
         }
 
         /* Date Divider */
@@ -943,107 +994,160 @@
             color: var(--text-gray);
             font-size: 0.85rem;
             font-weight: 600;
-            margin: 20px 0 10px;
+            margin: 20px 0 12px;
             padding-left: 5px;
         }
 
-        /* Success Screen */
-        .success-screen {
+        /* Generate Button */
+        .generate-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 60px 20px;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.3s;
+            z-index: 90;
+        }
+
+        .generate-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Stats Card */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .stat-card .value.danger { color: var(--danger); }
+        .stat-card .value.success { color: var(--success); }
+
+        /* Confirm Checkbox */
+        .checkbox-group {
+            padding: 0 20px 20px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 15px 18px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+
+        .checkbox-item input {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--primary);
+        }
+
+        /* Confirm Details */
+        .confirm-details {
+            background: #f8fafc;
+            border-radius: 18px;
+            padding: 25px;
+            margin: 0 20px 20px;
             text-align: center;
         }
 
-        .success-icon {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, var(--success), #059669);
-            border-radius: 50%;
+        .confirm-details .amount {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--danger);
+            margin: 12px 0;
+        }
+
+        .what-happens {
+            padding: 0 20px 20px;
+        }
+
+        .what-happens h4 {
+            margin-bottom: 15px;
+        }
+
+        .what-happens-item {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 25px;
-            animation: scaleIn 0.5s ease;
+            gap: 14px;
+            padding: 14px 0;
         }
 
-        @keyframes scaleIn {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+        .what-happens-item i {
+            color: var(--success);
+            font-size: 1.3rem;
         }
 
-        .success-icon i {
-            font-size: 3rem;
-            color: white;
+        /* Security Badge */
+        .security-badge {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 18px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 25px;
         }
 
-        .success-screen h2 {
-            color: var(--text-dark);
-            margin-bottom: 10px;
+        .security-badge i {
+            font-size: 2.5rem;
+            color: var(--success);
+            margin-bottom: 12px;
         }
 
-        .success-screen p {
-            color: var(--text-gray);
-            margin-bottom: 30px;
+        .security-badge h4 {
+            color: #065f46;
         }
 
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--text-dark);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 10px;
+        .security-badge p {
+            color: #047857;
             font-size: 0.9rem;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
         }
 
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
+        /* FAQ */
+        .faq-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        /* Notification Badge */
-        .notification-badge {
-            position: relative;
-        }
-
-        .notification-badge::after {
-            content: '1';
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 18px;
-            height: 18px;
-            background: var(--danger);
-            border-radius: 50%;
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .faq-item:hover {
+            background: #f8fafc;
         }
     </style>
 </head>
@@ -1051,13 +1155,13 @@
     <div class="phone-container">
         <div class="phone-notch"></div>
 
-        <!-- Screen 1: Home Dashboard -->
+        <!-- ==================== SCREEN 1: HOME ==================== -->
         <div class="screen active" id="screen-home">
             <div class="header">
                 <div class="header-main">
                     <h1><i class="fas fa-shield-alt"></i> SafePay</h1>
                     <div class="header-icons">
-                        <i class="fas fa-bell notification-badge" onclick="showScreen('screen-transactions')"></i>
+                        <i class="fas fa-bell notification-badge" data-count="0" id="alertBadge" onclick="showScreen('screen-transactions')"></i>
                         <i class="fas fa-user-circle" onclick="showScreen('screen-support')"></i>
                     </div>
                 </div>
@@ -1069,16 +1173,40 @@
                     <div class="balance-label">Total Balance</div>
                     <div class="balance-amount">$12,847.50</div>
                     <div class="balance-card-number">•••• •••• •••• 4829</div>
+                    <div class="ml-badge">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Protection Active</span>
+                    </div>
                 </div>
 
-                <!-- Alert Banner -->
-                <div class="alert-banner" onclick="showScreen('screen-fraud-alert')">
+                <!-- Alert Banner (hidden by default) -->
+                <div class="alert-banner danger" id="alertBanner" style="display: none;" onclick="showFraudAlert()">
                     <div class="alert-banner-header">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <span>1 Alert Pending</span>
+                        <span id="alertCount">1 Alert Pending</span>
                     </div>
-                    <p>Suspicious transaction detected. Review required.</p>
+                    <p id="alertMessage">Suspicious transaction detected. Review required.</p>
                     <span class="alert-banner-btn">Review Now <i class="fas fa-arrow-right"></i></span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="label">Transactions</div>
+                        <div class="value" id="statTotal">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Blocked</div>
+                        <div class="value danger" id="statBlocked">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Protected</div>
+                        <div class="value success" id="statProtected">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Risk Score</div>
+                        <div class="value" id="statRisk">0%</div>
+                    </div>
                 </div>
 
                 <!-- Recent Transactions -->
@@ -1087,61 +1215,17 @@
                     <span onclick="showScreen('screen-transactions')">View All</span>
                 </div>
 
-                <div class="transaction-card success" onclick="showToast('Transaction verified')">
-                    <div class="transaction-icon success">
-                        <i class="fab fa-amazon"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Amazon</div>
-                        <div class="transaction-meta">Today, 11:30 AM</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$47.99</div>
-                        <div class="status success">✓ Verified</div>
+                <div id="recentTransactions">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading transactions...</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="transaction-card danger" onclick="showScreen('screen-fraud-alert')">
-                    <div class="transaction-icon danger">
-                        <i class="fas fa-dice"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Las Vegas Casino</div>
-                        <div class="transaction-meta">Today, 3:24 PM</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$2,450.00</div>
-                        <div class="status danger">⚠️ HIGH RISK</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card success" onclick="showToast('Transaction verified')">
-                    <div class="transaction-icon success">
-                        <i class="fas fa-coffee"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Starbucks</div>
-                        <div class="transaction-meta">Yesterday, 8:45 AM</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$6.75</div>
-                        <div class="status success">✓ Verified</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card warning" onclick="showToast('Transaction approved by you')">
-                    <div class="transaction-icon warning">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Best Buy</div>
-                        <div class="transaction-meta">Yesterday, 2:15 PM</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$899.99</div>
-                        <div class="status warning">✓ Approved</div>
-                    </div>
-                </div>
+            <!-- Generate Transaction Button -->
+            <div class="generate-btn" onclick="generateNewTransaction()" title="Simulate Transaction">
+                <i class="fas fa-plus"></i>
             </div>
 
             <div class="bottom-nav">
@@ -1153,7 +1237,7 @@
                     <i class="fas fa-credit-card"></i>
                     <span>Transactions</span>
                 </div>
-                <div class="nav-item" onclick="showScreen('screen-risk-analysis')">
+                <div class="nav-item" onclick="showScreen('screen-analytics')">
                     <i class="fas fa-chart-pie"></i>
                     <span>Analytics</span>
                 </div>
@@ -1164,7 +1248,7 @@
             </div>
         </div>
 
-        <!-- Screen 2: All Transactions -->
+        <!-- ==================== SCREEN 2: ALL TRANSACTIONS ==================== -->
         <div class="screen" id="screen-transactions">
             <div class="header-back">
                 <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
@@ -1174,117 +1258,20 @@
             <div class="content">
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search transactions...">
+                    <input type="text" placeholder="Search transactions..." id="searchInput" oninput="filterTransactions()">
                 </div>
 
                 <div class="filter-tabs">
-                    <div class="filter-tab active">All</div>
-                    <div class="filter-tab" onclick="showToast('Filter: Flagged')">Flagged</div>
-                    <div class="filter-tab" onclick="showToast('Filter: Approved')">Approved</div>
-                    <div class="filter-tab" onclick="showToast('Filter: Blocked')">Blocked</div>
+                    <div class="filter-tab active" data-filter="all">All</div>
+                    <div class="filter-tab" data-filter="flagged">Flagged</div>
+                    <div class="filter-tab" data-filter="approved">Approved</div>
+                    <div class="filter-tab" data-filter="blocked">Blocked</div>
                 </div>
 
-                <div class="date-divider">Today</div>
-
-                <div class="transaction-card danger" onclick="showScreen('screen-fraud-alert')">
-                    <div class="transaction-icon danger">
-                        <i class="fas fa-dice"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Las Vegas Casino</div>
-                        <div class="transaction-meta">3:24 PM • Las Vegas, NV</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$2,450.00</div>
-                        <div class="status danger">⚠️ REVIEW</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card success">
-                    <div class="transaction-icon success">
-                        <i class="fab fa-amazon"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Amazon</div>
-                        <div class="transaction-meta">11:30 AM • Online</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$47.99</div>
-                        <div class="status success">✓ Verified</div>
-                    </div>
-                </div>
-
-                <div class="date-divider">Yesterday</div>
-
-                <div class="transaction-card warning">
-                    <div class="transaction-icon warning">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Best Buy</div>
-                        <div class="transaction-meta">2:15 PM • Store #1247</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$899.99</div>
-                        <div class="status warning">✓ Approved</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card success">
-                    <div class="transaction-icon success">
-                        <i class="fas fa-coffee"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Starbucks</div>
-                        <div class="transaction-meta">8:45 AM • Drive-thru</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$6.75</div>
-                        <div class="status success">✓ Verified</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card success">
-                    <div class="transaction-icon success">
-                        <i class="fas fa-gas-pump"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Shell Gas</div>
-                        <div class="transaction-meta">7:30 AM • Station #892</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$52.00</div>
-                        <div class="status success">✓ Verified</div>
-                    </div>
-                </div>
-
-                <div class="date-divider">This Week</div>
-
-                <div class="transaction-card success">
-                    <div class="transaction-icon success">
-                        <i class="fas fa-utensils"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Chipotle</div>
-                        <div class="transaction-meta">Mon • 12:30 PM</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$14.50</div>
-                        <div class="status success">✓ Verified</div>
-                    </div>
-                </div>
-
-                <div class="transaction-card success">
-                    <div class="transaction-icon success">
-                        <i class="fab fa-spotify"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <div class="transaction-name">Spotify</div>
-                        <div class="transaction-meta">Mon • Auto-renewal</div>
-                    </div>
-                    <div class="transaction-amount">
-                        <div class="amount">-$9.99</div>
-                        <div class="status success">✓ Verified</div>
+                <div id="allTransactions">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading transactions...</p>
                     </div>
                 </div>
             </div>
@@ -1298,7 +1285,7 @@
                     <i class="fas fa-credit-card"></i>
                     <span>Transactions</span>
                 </div>
-                <div class="nav-item" onclick="showScreen('screen-risk-analysis')">
+                <div class="nav-item" onclick="showScreen('screen-analytics')">
                     <i class="fas fa-chart-pie"></i>
                     <span>Analytics</span>
                 </div>
@@ -1309,39 +1296,41 @@
             </div>
         </div>
 
-        <!-- Screen 3: Fraud Alert -->
+        <!-- ==================== SCREEN 3: FRAUD ALERT ==================== -->
         <div class="screen" id="screen-fraud-alert">
             <div class="fraud-header">
                 <i class="fas fa-exclamation-circle main-icon"></i>
                 <h2>Suspicious Activity Detected</h2>
-                <p>Review this transaction immediately</p>
+                <p>AI has flagged this transaction</p>
             </div>
 
             <div class="fraud-details">
                 <div class="fraud-merchant">
-                    <h3>Las Vegas Casino</h3>
-                    <div class="location"><i class="fas fa-map-marker-alt"></i> Las Vegas, NV</div>
-                    <div class="amount">$2,450.00</div>
-                    <div class="time"><i class="fas fa-clock"></i> Today, 3:24 PM</div>
+                    <h3 id="fraudMerchant">Loading...</h3>
+                    <div class="location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="fraudLocation">Loading...</span>
+                    </div>
+                    <div class="amount" id="fraudAmount">$0.00</div>
+                    <div class="time" id="fraudTime">
+                        <i class="fas fa-clock"></i> Loading...
+                    </div>
                 </div>
 
                 <div class="risk-score">
                     <div class="risk-score-header">
-                        <span><i class="fas fa-chart-line"></i> Risk Score</span>
-                        <span class="score">87/100</span>
+                        <span><i class="fas fa-brain"></i> AI Risk Score</span>
+                        <span class="score danger" id="fraudScore">0/100</span>
                     </div>
                     <div class="risk-bar">
-                        <div class="risk-bar-fill danger" style="width: 87%"></div>
+                        <div class="risk-bar-fill danger" id="fraudScoreBar" style="width: 0%"></div>
                     </div>
                 </div>
 
                 <div class="why-flagged">
-                    <h4><i class="fas fa-flag"></i> Why This Was Flagged</h4>
-                    <ul>
-                        <li><i class="fas fa-map-marker-alt"></i> Unusual location (1,847 miles away)</li>
-                        <li><i class="fas fa-dollar-sign"></i> Amount is 50x your average</li>
-                        <li><i class="fas fa-dice"></i> First gambling transaction ever</li>
-                        <li><i class="fas fa-clock"></i> Different from typical pattern</li>
+                    <h4><i class="fas fa-flag"></i> Why AI Flagged This</h4>
+                    <ul id="fraudReasons">
+                        <li>Loading risk factors...</li>
                     </ul>
                 </div>
             </div>
@@ -1359,86 +1348,40 @@
             </div>
         </div>
 
-        <!-- Screen 4: Risk Analysis -->
+        <!-- ==================== SCREEN 4: RISK ANALYSIS ==================== -->
         <div class="screen" id="screen-risk-analysis">
             <div class="header-back">
                 <i class="fas fa-arrow-left" onclick="showScreen('screen-fraud-alert')"></i>
-                <h2>Risk Analysis</h2>
+                <h2>AI Risk Analysis</h2>
             </div>
 
             <div class="content">
-                <div class="fraud-merchant" style="background: #f8fafc; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                    <h3>Las Vegas Casino</h3>
-                    <div class="amount" style="color: var(--danger);">$2,450.00</div>
+                <div class="fraud-merchant" style="background: white; padding: 20px; border-radius: 18px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <h3 id="analysisMerchant">Loading...</h3>
+                    <div class="amount" id="analysisAmount" style="color: var(--danger);">$0.00</div>
                 </div>
 
                 <div class="section-title">
                     <span style="color: var(--text-dark);">Detailed Risk Breakdown</span>
                 </div>
 
-                <div class="risk-breakdown">
-                    <div class="risk-item">
-                        <div class="risk-item-header">
-                            <span class="label"><i class="fas fa-map-marker-alt"></i> Location Risk</span>
-                            <span class="percentage danger">92%</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill danger" style="width: 92%"></div>
-                        </div>
-                        <p>1,847 miles from your home location</p>
-                    </div>
-
-                    <div class="risk-item">
-                        <div class="risk-item-header">
-                            <span class="label"><i class="fas fa-dollar-sign"></i> Amount Risk</span>
-                            <span class="percentage warning">78%</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill warning" style="width: 78%"></div>
-                        </div>
-                        <p>50x higher than your average transaction</p>
-                    </div>
-
-                    <div class="risk-item">
-                        <div class="risk-item-header">
-                            <span class="label"><i class="fas fa-store"></i> Merchant Risk</span>
-                            <span class="percentage danger">85%</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill danger" style="width: 85%"></div>
-                        </div>
-                        <p>First transaction in gambling category</p>
-                    </div>
-
-                    <div class="risk-item">
-                        <div class="risk-item-header">
-                            <span class="label"><i class="fas fa-clock"></i> Time Pattern</span>
-                            <span class="percentage success">34%</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill success" style="width: 34%"></div>
-                        </div>
-                        <p>Within your normal activity hours</p>
-                    </div>
+                <div id="riskBreakdown">
+                    <!-- Risk items will be loaded dynamically -->
                 </div>
 
                 <div class="comparison-box">
                     <h4><i class="fas fa-chart-bar"></i> Spending Comparison</h4>
                     <div class="comparison-row">
-                        <span class="label">Your Average Transaction</span>
+                        <span class="label">Your Average</span>
                         <span class="value">$48.50</span>
                     </div>
                     <div class="comparison-row">
                         <span class="label">This Transaction</span>
-                        <span class="value danger">$2,450.00</span>
+                        <span class="value danger" id="comparisonAmount">$0.00</span>
                     </div>
                     <div class="comparison-row">
-                        <span class="label">Category</span>
-                        <span class="value">Gambling</span>
-                    </div>
-                    <div class="comparison-row">
-                        <span class="label">Previous in Category</span>
-                        <span class="value">$0.00</span>
+                        <span class="label">Distance</span>
+                        <span class="value" id="comparisonDistance">0 miles</span>
                     </div>
                 </div>
             </div>
@@ -1453,15 +1396,15 @@
             </div>
         </div>
 
-        <!-- Screen 5: Block Confirmation -->
+        <!-- ==================== SCREEN 5: BLOCK CONFIRMATION ==================== -->
         <div class="screen" id="screen-block-confirm">
             <div class="header-back">
                 <i class="fas fa-arrow-left" onclick="showScreen('screen-fraud-alert')"></i>
                 <h2>Block Transaction</h2>
             </div>
 
-            <div class="confirm-header">
-                <div class="icon">
+            <div class="success-screen" style="padding: 40px 20px;">
+                <div class="success-icon red">
                     <i class="fas fa-shield-alt"></i>
                 </div>
                 <h2>Confirm Block</h2>
@@ -1469,9 +1412,9 @@
             </div>
 
             <div class="confirm-details">
-                <h4>Las Vegas Casino</h4>
+                <h4 id="confirmMerchant">Las Vegas Casino</h4>
                 <p>Card ending in •••• 4829</p>
-                <div class="amount">$2,450.00</div>
+                <div class="amount" id="confirmAmount">$2,450.00</div>
             </div>
 
             <div class="what-happens">
@@ -1490,22 +1433,22 @@
                 </div>
                 <div class="what-happens-item">
                     <i class="fas fa-check-circle"></i>
-                    <span>New card will be issued within 3-5 days</span>
+                    <span>New card issued within 3-5 days</span>
                 </div>
             </div>
 
             <div class="checkbox-group">
                 <div class="checkbox-item">
-                    <input type="checkbox" id="report-fraud" checked>
-                    <label for="report-fraud">Report as fraud</label>
+                    <input type="checkbox" id="reportFraud" checked>
+                    <label for="reportFraud">Report as fraud</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="file-dispute">
-                    <label for="file-dispute">File official dispute</label>
+                    <input type="checkbox" id="fileDispute">
+                    <label for="fileDispute">File official dispute</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="contact-support">
-                    <label for="contact-support">Contact support team</label>
+                    <input type="checkbox" id="contactSupport">
+                    <label for="contactSupport">Contact support team</label>
                 </div>
             </div>
 
@@ -1519,7 +1462,89 @@
             </div>
         </div>
 
-        <!-- Screen 6: Support -->
+        <!-- ==================== SCREEN 6: ANALYTICS ==================== -->
+        <div class="screen" id="screen-analytics">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
+                <h2>Security Analytics</h2>
+            </div>
+
+            <div class="content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Total Scanned</div>
+                        <div class="value" id="analyticsTotal">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Threats Blocked</div>
+                        <div class="value danger" id="analyticsBlocked">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Money Saved</div>
+                        <div class="value success" id="analyticsSaved">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Protection Rate</div>
+                        <div class="value" id="analyticsRate">0%</div>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <span>AI Model Information</span>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-robot"></i> Model Type</span>
+                        <span class="percentage success">Active</span>
+                    </div>
+                    <p>Random Forest Classifier with 100 estimators</p>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-database"></i> Features Analyzed</span>
+                        <span class="percentage success">8</span>
+                    </div>
+                    <p>Amount, location, time, merchant category, spending patterns, and more</p>
+                </div>
+
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-chart-line"></i> Accuracy</span>
+                        <span class="percentage success">94%</span>
+                    </div>
+                    <p>Based on 10,000 training transactions</p>
+                </div>
+
+                <div class="security-badge">
+                    <i class="fas fa-lock"></i>
+                    <h4>End-to-End Encryption</h4>
+                    <p>All data is encrypted and secure</p>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-transactions')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item active" onclick="showScreen('screen-analytics')">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Analytics</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-support')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SCREEN 7: SUPPORT ==================== -->
         <div class="screen" id="screen-support">
             <div class="header-back">
                 <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
@@ -1539,7 +1564,7 @@
                         <h4>Live Chat</h4>
                         <p>Average wait: 2 minutes</p>
                     </div>
-                    <i class="fas fa-chevron-right arrow"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
                 </div>
 
                 <div class="support-card" onclick="showToast('Calling support...')">
@@ -1550,10 +1575,10 @@
                         <h4>Call Support</h4>
                         <p>Available 24/7</p>
                     </div>
-                    <i class="fas fa-chevron-right arrow"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
                 </div>
 
-                <div class="support-card" onclick="showToast('Opening fraud report form...')">
+                <div class="support-card" onclick="showToast('Opening fraud report...')">
                     <div class="support-icon report">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
@@ -1561,30 +1586,22 @@
                         <h4>Report Fraud</h4>
                         <p>Immediate assistance</p>
                     </div>
-                    <i class="fas fa-chevron-right arrow"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
                 </div>
 
-                <div class="faq-section" style="margin-top: 30px;">
-                    <h4><i class="fas fa-question-circle"></i> Common Questions</h4>
-                    
-                    <div class="faq-item" onclick="showToast('Opening FAQ...')">
-                        What makes a transaction suspicious?
-                    </div>
-                    <div class="faq-item" onclick="showToast('Opening FAQ...')">
-                        How do I dispute a charge?
-                    </div>
-                    <div class="faq-item" onclick="showToast('Opening FAQ...')">
-                        When will I get a new card?
-                    </div>
-                    <div class="faq-item" onclick="showToast('Opening FAQ...')">
-                        How to update my trusted locations?
-                    </div>
+                <div class="section-title" style="margin-top: 30px;">
+                    <span style="color: var(--text-dark);">Common Questions</span>
                 </div>
+
+                <div class="faq-item">What makes a transaction suspicious?</div>
+                <div class="faq-item">How does the AI detect fraud?</div>
+                <div class="faq-item">When will I get a new card?</div>
+                <div class="faq-item">How to update trusted locations?</div>
 
                 <div class="security-badge">
                     <i class="fas fa-lock"></i>
                     <h4>Your Data is Encrypted</h4>
-                    <p>Last security check: 2 minutes ago</p>
+                    <p>256-bit AES encryption</p>
                 </div>
             </div>
 
@@ -1597,7 +1614,7 @@
                     <i class="fas fa-credit-card"></i>
                     <span>Transactions</span>
                 </div>
-                <div class="nav-item" onclick="showScreen('screen-risk-analysis')">
+                <div class="nav-item" onclick="showScreen('screen-analytics')">
                     <i class="fas fa-chart-pie"></i>
                     <span>Analytics</span>
                 </div>
@@ -1608,130 +1625,470 @@
             </div>
         </div>
 
-        <!-- Screen 7: Success (Transaction Approved) -->
+        <!-- ==================== SCREEN 8: SUCCESS (APPROVED) ==================== -->
         <div class="screen" id="screen-success-approve">
             <div class="success-screen">
-                <div class="success-icon">
+                <div class="success-icon green">
                     <i class="fas fa-check"></i>
                 </div>
                 <h2>Transaction Approved</h2>
-                <p>This transaction has been verified and marked as safe.</p>
-                <button class="btn btn-primary" onclick="showScreen('screen-home')" style="width: 100%; max-width: 250px;">
+                <p>This transaction has been verified and marked as safe. Our AI will learn from this.</p>
+                <button class="btn btn-primary" onclick="showScreen('screen-home'); loadData();" style="width: 100%; max-width: 280px;">
                     <i class="fas fa-home"></i> Back to Home
                 </button>
             </div>
         </div>
 
-        <!-- Screen 8: Success (Transaction Blocked) -->
+        <!-- ==================== SCREEN 9: SUCCESS (BLOCKED) ==================== -->
         <div class="screen" id="screen-success-block">
             <div class="success-screen">
-                <div class="success-icon" style="background: linear-gradient(135deg, var(--danger), #dc2626);">
+                <div class="success-icon red">
                     <i class="fas fa-ban"></i>
                 </div>
                 <h2>Transaction Blocked</h2>
-                <p>This transaction has been blocked and reported. Your card has been frozen for security.</p>
-                <button class="btn btn-primary" onclick="showScreen('screen-home')" style="width: 100%; max-width: 250px; margin-bottom: 10px;">
+                <p>This transaction has been blocked and reported. Your card has been frozen for security. Our AI will learn from this pattern.</p>
+                <button class="btn btn-primary" onclick="showScreen('screen-home'); loadData();" style="width: 100%; max-width: 280px; margin-bottom: 12px;">
                     <i class="fas fa-home"></i> Back to Home
                 </button>
-                <button class="btn btn-outline" onclick="showScreen('screen-support')" style="width: 100%; max-width: 250px;">
+                <button class="btn btn-outline" onclick="showScreen('screen-support')" style="width: 100%; max-width: 280px;">
                     <i class="fas fa-headset"></i> Contact Support
                 </button>
             </div>
         </div>
 
         <!-- Toast Notification -->
-        <div class="toast" id="toast">Notification</div>
+        <div class="toast" id="toast">
+            <i class="fas fa-info-circle"></i>
+            <span id="toastMessage">Notification</span>
+        </div>
     </div>
 
     <script>
-        // Screen Navigation
+        // ==================== CONFIGURATION ====================
+        const API_BASE = 'http://localhost:5000/api';
+        let currentAlert = null;
+        let allTransactions = [];
+
+        // ==================== SCREEN NAVIGATION ====================
         function showScreen(screenId) {
-            // Hide all screens
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-            
-            // Show selected screen
             document.getElementById(screenId).classList.add('active');
-            
-            // Scroll to top
             document.getElementById(screenId).scrollTop = 0;
         }
 
-        // Toast Notification
-        function showToast(message) {
+        // ==================== TOAST NOTIFICATIONS ====================
+        function showToast(message, icon = 'info-circle') {
             const toast = document.getElementById('toast');
-            toast.textContent = message;
+            document.getElementById('toastMessage').textContent = message;
+            toast.querySelector('i').className = `fas fa-${icon}`;
             toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Approve Transaction
-        function approveTransaction() {
-            showScreen('screen-success-approve');
+        // ==================== API CALLS ====================
+        async function fetchAPI(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('Connection error. Using demo mode.', 'exclamation-triangle');
+                return null;
+            }
+        }
+
+        // ==================== LOAD DATA ====================
+        async function loadData() {
+            // Load transactions
+            const txnData = await fetchAPI('/transactions');
+            if (txnData && txnData.success) {
+                allTransactions = txnData.transactions;
+                renderTransactions();
+            } else {
+                // Demo mode - generate sample data
+                await generateInitialTransactions();
+            }
+
+            // Load stats
+            const statsData = await fetchAPI('/stats');
+            if (statsData && statsData.success) {
+                updateStats(statsData.stats);
+            }
+
+            // Load alerts
+            const alertData = await fetchAPI('/alerts');
+            if (alertData && alertData.success) {
+                updateAlerts(alertData.alerts);
+            }
+        }
+
+        // Generate initial transactions for demo
+        async function generateInitialTransactions() {
+            showToast('Generating sample transactions...', 'sync');
+            const data = await fetchAPI('/transactions/batch?count=10');
+            if (data && data.success) {
+                allTransactions = data.transactions;
+                renderTransactions();
+                loadData(); // Refresh all data
+            }
+        }
+
+        // ==================== RENDER TRANSACTIONS ====================
+        function renderTransactions() {
+            const recentContainer = document.getElementById('recentTransactions');
+            const allContainer = document.getElementById('allTransactions');
+
+            if (allTransactions.length === 0) {
+                const emptyHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <h3>No Transactions Yet</h3>
+                        <p>Click the + button to simulate transactions</p>
+                    </div>
+                `;
+                recentContainer.innerHTML = emptyHTML;
+                allContainer.innerHTML = emptyHTML;
+                return;
+            }
+
+            // Render recent (last 5)
+            recentContainer.innerHTML = allTransactions.slice(0, 5).map(txn => createTransactionCard(txn)).join('');
+
+            // Render all
+            allContainer.innerHTML = allTransactions.map(txn => createTransactionCard(txn)).join('');
+        }
+
+        function createTransactionCard(txn) {
+            const riskClass = txn.risk_color || 'success';
+            const statusText = getStatusText(txn);
+            const formattedDate = formatDate(txn.timestamp);
+
+            return `
+                <div class="transaction-card ${riskClass}" onclick="viewTransaction('${txn.id}')">
+                    <div class="transaction-icon ${riskClass}">
+                        <i class="${txn.icon || 'fas fa-receipt'}"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-name">${txn.merchant}</div>
+                        <div class="transaction-meta">${formattedDate} • ${txn.location}</div>
+                    </div>
+                    <div class="transaction-amount">
+                        <div class="amount">-$${txn.amount.toFixed(2)}</div>
+                        <div class="status ${riskClass}">${statusText}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusText(txn) {
+            if (txn.status === 'blocked') return '🚫 Blocked';
+            if (txn.status === 'approved') return '✓ Approved';
+            if (txn.status === 'pending') return '⚠️ REVIEW';
+            if (txn.risk_level === 'HIGH') return '⚠️ HIGH RISK';
+            if (txn.risk_level === 'MEDIUM') return '⚠️ Medium';
+            return '✓ Verified';
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diff = now - date;
             
-            // Remove alert after approval
-            setTimeout(() => {
-                const alertBanner = document.querySelector('.alert-banner');
-                if (alertBanner) {
-                    alertBanner.style.display = 'none';
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff/60000)} min ago`;
+            if (diff < 86400000) return `Today, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            return date.toLocaleDateString();
+        }
+
+        // ==================== UPDATE STATS ====================
+        function updateStats(stats) {
+            document.getElementById('statTotal').textContent = stats.total_transactions;
+            document.getElementById('statBlocked').textContent = stats.blocked;
+            document.getElementById('statProtected').textContent = `$${stats.blocked_amount.toLocaleString()}`;
+            document.getElementById('statRisk').textContent = `${stats.fraud_prevention_rate}%`;
+
+            // Analytics screen
+            document.getElementById('analyticsTotal').textContent = stats.total_transactions;
+            document.getElementById('analyticsBlocked').textContent = stats.blocked;
+            document.getElementById('analyticsSaved').textContent = `$${stats.blocked_amount.toLocaleString()}`;
+            document.getElementById('analyticsRate').textContent = `${100 - stats.fraud_prevention_rate}%`;
+        }
+
+        // ==================== UPDATE ALERTS ====================
+        function updateAlerts(alerts) {
+            const badge = document.getElementById('alertBadge');
+            const banner = document.getElementById('alertBanner');
+            
+            if (alerts.length > 0) {
+                badge.setAttribute('data-count', alerts.length);
+                badge.style.display = 'block';
+                banner.style.display = 'block';
+                document.getElementById('alertCount').textContent = `${alerts.length} Alert${alerts.length > 1 ? 's' : ''} Pending`;
+                document.getElementById('alertMessage').textContent = `$${alerts[0].amount.toFixed(2)} at ${alerts[0].merchant}`;
+                currentAlert = alerts[0];
+            } else {
+                badge.setAttribute('data-count', '0');
+                badge.style.display = 'none';
+                banner.style.display = 'none';
+            }
+        }
+
+        // ==================== GENERATE NEW TRANSACTION ====================
+        async function generateNewTransaction() {
+            showToast('Processing new transaction...', 'sync');
+            
+            // Randomly decide if we want to force a fraudulent transaction
+            const forceFraud = Math.random() < 0.3; // 30% chance
+            
+            const data = await fetchAPI(`/transactions/generate?fraud=${forceFraud}`);
+            
+            if (data && data.success) {
+                allTransactions.unshift(data.transaction);
+                renderTransactions();
+                
+                if (data.is_alert) {
+                    currentAlert = data.transaction;
+                    showToast('⚠️ Suspicious transaction detected!', 'exclamation-triangle');
+                    updateAlerts([data.transaction]);
+                } else {
+                    showToast('✓ Transaction verified by AI', 'check-circle');
                 }
-            }, 500);
-        }
-
-        // Block Transaction
-        function blockTransaction() {
-            showScreen('screen-success-block');
-            
-            // Remove alert after blocking
-            setTimeout(() => {
-                const alertBanner = document.querySelector('.alert-banner');
-                if (alertBanner) {
-                    alertBanner.style.display = 'none';
+                
+                // Refresh stats
+                const statsData = await fetchAPI('/stats');
+                if (statsData && statsData.success) {
+                    updateStats(statsData.stats);
                 }
-            }, 500);
+            }
         }
 
-        // Filter Tab Click
+        // ==================== VIEW TRANSACTION ====================
+        function viewTransaction(txnId) {
+            const txn = allTransactions.find(t => t.id === txnId);
+            if (!txn) return;
+
+            if (txn.risk_score >= 50 && txn.status === 'pending') {
+                currentAlert = txn;
+                showFraudAlert();
+            } else {
+                showToast(`${txn.merchant}: $${txn.amount.toFixed(2)} - ${getStatusText(txn)}`);
+            }
+        }
+
+        // ==================== SHOW FRAUD ALERT ====================
+        function showFraudAlert() {
+            if (!currentAlert) {
+                showToast('No pending alerts');
+                return;
+            }
+
+            const txn = currentAlert;
+
+            // Update fraud alert screen
+            document.getElementById('fraudMerchant').textContent = txn.merchant;
+            document.getElementById('fraudLocation').textContent = txn.location;
+            document.getElementById('fraudAmount').textContent = `$${txn.amount.toFixed(2)}`;
+            document.getElementById('fraudTime').innerHTML = `<i class="fas fa-clock"></i> ${formatDate(txn.timestamp)}`;
+            
+            // Risk score
+            const scoreEl = document.getElementById('fraudScore');
+            scoreEl.textContent = `${txn.risk_score}/100`;
+            scoreEl.className = `score ${txn.risk_color}`;
+            document.getElementById('fraudScoreBar').style.width = `${txn.risk_score}%`;
+            document.getElementById('fraudScoreBar').className = `risk-bar-fill ${txn.risk_color}`;
+
+            // Risk factors
+            const reasonsEl = document.getElementById('fraudReasons');
+            if (txn.risk_factors && txn.risk_factors.length > 0) {
+                reasonsEl.innerHTML = txn.risk_factors.map(factor => `
+                    <li>
+                        <i class="${factor.icon || 'fas fa-exclamation-circle'}"></i>
+                        <div class="factor-text">
+                            <div class="factor-title">${factor.factor}</div>
+                            <div class="factor-detail">${factor.detail}</div>
+                        </div>
+                    </li>
+                `).join('');
+            } else {
+                reasonsEl.innerHTML = '<li><i class="fas fa-robot"></i> AI detected unusual pattern</li>';
+            }
+
+            // Update analysis screen
+            document.getElementById('analysisMerchant').textContent = txn.merchant;
+            document.getElementById('analysisAmount').textContent = `$${txn.amount.toFixed(2)}`;
+            document.getElementById('comparisonAmount').textContent = `$${txn.amount.toFixed(2)}`;
+            document.getElementById('comparisonDistance').textContent = `${txn.distance} miles`;
+
+            // Update confirm screen
+            document.getElementById('confirmMerchant').textContent = txn.merchant;
+            document.getElementById('confirmAmount').textContent = `$${txn.amount.toFixed(2)}`;
+
+            // Render risk breakdown
+            renderRiskBreakdown(txn);
+
+            showScreen('screen-fraud-alert');
+        }
+
+        function renderRiskBreakdown(txn) {
+            const container = document.getElementById('riskBreakdown');
+            
+            // Create risk items based on transaction data
+            const riskItems = [
+                {
+                    label: 'Location Risk',
+                    icon: 'fas fa-map-marker-alt',
+                    value: Math.min(Math.round(txn.distance / 20), 100),
+                    detail: `${txn.distance} miles from home`
+                },
+                {
+                    label: 'Amount Risk',
+                    icon: 'fas fa-dollar-sign',
+                    value: Math.min(Math.round((txn.amount / 50) * 10), 100),
+                    detail: `$${txn.amount.toFixed(2)} transaction`
+                },
+                {
+                    label: 'Merchant Risk',
+                    icon: 'fas fa-store',
+                    value: txn.risk_score,
+                    detail: `Category: ${txn.category}`
+                }
+            ];
+
+            container.innerHTML = riskItems.map(item => {
+                const riskClass = item.value >= 70 ? 'danger' : (item.value >= 40 ? 'warning' : 'success');
+                return `
+                    <div class="risk-item">
+                        <div class="risk-item-header">
+                            <span class="label"><i class="${item.icon}"></i> ${item.label}</span>
+                            <span class="percentage ${riskClass}">${item.value}%</span>
+                        </div>
+                        <div class="risk-bar">
+                            <div class="risk-bar-fill ${riskClass}" style="width: ${item.value}%"></div>
+                        </div>
+                        <p>${item.detail}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== APPROVE TRANSACTION ====================
+        async function approveTransaction() {
+            if (!currentAlert) return;
+
+            showToast('Approving transaction...', 'sync');
+
+            const data = await fetchAPI('/transaction/approve', {
+                method: 'POST',
+                body: JSON.stringify({ id: currentAlert.id })
+            });
+
+            if (data && data.success) {
+                // Update local data
+                const txn = allTransactions.find(t => t.id === currentAlert.id);
+                if (txn) {
+                    txn.status = 'approved';
+                    txn.risk_color = 'success';
+                }
+                
+                currentAlert = null;
+                updateAlerts([]);
+                showScreen('screen-success-approve');
+            } else {
+                showToast('Error approving transaction', 'exclamation-triangle');
+            }
+        }
+
+        // ==================== BLOCK TRANSACTION ====================
+        async function blockTransaction() {
+            if (!currentAlert) return;
+
+            const reportFraud = document.getElementById('reportFraud').checked;
+            
+            showToast('Blocking transaction...', 'sync');
+
+            const data = await fetchAPI('/transaction/block', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    id: currentAlert.id,
+                    report_fraud: reportFraud
+                })
+            });
+
+            if (data && data.success) {
+                // Update local data
+                const txn = allTransactions.find(t => t.id === currentAlert.id);
+                if (txn) {
+                    txn.status = 'blocked';
+                    txn.risk_color = 'danger';
+                }
+                
+                currentAlert = null;
+                updateAlerts([]);
+                showScreen('screen-success-block');
+            } else {
+                showToast('Error blocking transaction', 'exclamation-triangle');
+            }
+        }
+
+        // ==================== FILTER TRANSACTIONS ====================
+        function filterTransactions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allTransactions.filter(txn => 
+                txn.merchant.toLowerCase().includes(searchTerm) ||
+                txn.location.toLowerCase().includes(searchTerm)
+            );
+            
+            const container = document.getElementById('allTransactions');
+            container.innerHTML = filtered.map(txn => createTransactionCard(txn)).join('');
+        }
+
+        // Filter tabs
         document.querySelectorAll('.filter-tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-            });
-        });
-
-        // Add ripple effect to buttons
-        document.querySelectorAll('.btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                let ripple = document.createElement('span');
-                ripple.style.position = 'absolute';
-                ripple.style.background = 'rgba(255,255,255,0.3)';
-                ripple.style.borderRadius = '50%';
-                ripple.style.width = '100px';
-                ripple.style.height = '100px';
-                ripple.style.transform = 'translate(-50%, -50%)';
-                ripple.style.pointerEvents = 'none';
-                ripple.style.animation = 'ripple 0.6s ease-out';
-                this.style.position = 'relative';
-                this.style.overflow = 'hidden';
-                this.appendChild(ripple);
                 
-                setTimeout(() => ripple.remove(), 600);
+                const filter = this.getAttribute('data-filter');
+                let filtered = allTransactions;
+                
+                if (filter === 'flagged') {
+                    filtered = allTransactions.filter(t => t.status === 'pending' && t.risk_score >= 50);
+                } else if (filter === 'approved') {
+                    filtered = allTransactions.filter(t => t.status === 'approved');
+                } else if (filter === 'blocked') {
+                    filtered = allTransactions.filter(t => t.status === 'blocked');
+                }
+                
+                const container = document.getElementById('allTransactions');
+                if (filtered.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-filter"></i>
+                            <h3>No Results</h3>
+                            <p>No transactions match this filter</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = filtered.map(txn => createTransactionCard(txn)).join('');
+                }
             });
         });
 
-        // Add CSS for ripple
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-                100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
+        // ==================== INITIALIZE ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadData, 30000);
+        });
     </script>
 </body>
 </html>
