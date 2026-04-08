@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafePay - AI Fraud Detection</title>
+    <title>Verity - AI Fraud Detection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -1315,8 +1315,6 @@
             color: #4ade80;
         }
 
-        .factor-desc { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
-
         .factor-bar {
             height: 6px;
             background: rgba(255,255,255,0.1);
@@ -1498,7 +1496,7 @@
         <div class="screen active" id="screen-home">
             <div class="header">
                 <div class="header-main">
-                    <h1><i class="fas fa-shield-alt"></i> SafePay</h1>
+                    <h1><i class="fas fa-shield-alt"></i> Verity</h1>
                     <button class="live-toggle" id="liveToggle" onclick="toggleAutoMode()">
                         <div class="dot"></div>
                         <span>AUTO</span>
@@ -2052,7 +2050,7 @@
                     <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
                 </div>
 
-                <div class="support-card" onclick="showToast('Calling +1-800-SAFEPAY...', 'phone')">
+                <div class="support-card" onclick="showToast('Calling +1-800-VERITY...', 'phone')">
                     <div class="support-icon success"><i class="fas fa-phone"></i></div>
                     <div class="support-info">
                         <h4>Call Support</h4>
@@ -2063,7 +2061,7 @@
 
                 <div class="security-badge">
                     <i class="fas fa-code"></i>
-                    <h4>SafePay Demo v2.0</h4>
+                    <h4>Verity Demo v2.0</h4>
                     <p>Real-time fraud detection</p>
                 </div>
             </div>
@@ -2355,7 +2353,6 @@
         // UI UPDATES
         // ============================================
         function updateUI() {
-            // Stats
             document.getElementById('balanceAmount').textContent = `$${balance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
             document.getElementById('statTotal').textContent = transactions.length;
             document.getElementById('statBlocked').textContent = transactions.filter(t => t.status === 'blocked').length;
@@ -2425,7 +2422,6 @@
         function updateAlertBanner() {
             const pending = transactions.filter(t => t.riskScore >= 40 && t.status === 'pending');
             const banner = document.getElementById('alertBanner');
-            const badge = document.getElementById('liveToggle');
             
             if (pending.length > 0) {
                 banner.style.display = 'block';
@@ -2476,7 +2472,6 @@
             if (!currentAlert) return;
             const t = currentAlert;
             
-            // Main alert
             document.getElementById('fraudHeader').className = t.riskScore >= 70 ? 'fraud-header' : 'fraud-header warning';
             document.getElementById('fraudTitle').textContent = t.riskScore >= 70 ? 'High Risk Detected!' : 'Unusual Activity';
             document.getElementById('fraudMerchant').textContent = t.merchant;
@@ -2504,20 +2499,15 @@
                 `).join('')
                 : '<li><i class="fas fa-check"></i><div class="factor-text"><div class="factor-title">Low Risk</div></div></li>';
             
-            // Block confirm
             document.getElementById('blockMerchant').textContent = t.merchant;
             document.getElementById('blockAmount').textContent = `$${t.amount.toFixed(2)}`;
-            
-            // Report
             document.getElementById('reportMerchant').textContent = t.merchant;
             document.getElementById('reportAmount').textContent = `$${t.amount.toFixed(2)}`;
-            
-            // Analysis
             document.getElementById('analysisMerchant').textContent = t.merchant;
             document.getElementById('analysisAmount').textContent = `$${t.amount.toFixed(2)}`;
             document.getElementById('comparisonAmount').textContent = `$${t.amount.toFixed(2)}`;
             document.getElementById('comparisonDistance').textContent = `${t.distance} miles`;
-            
+
             renderBreakdown(t);
             showScreen('screen-fraud-alert');
         }
@@ -2568,11 +2558,7 @@
             currentAlert.status = 'blocked';
             
             const reportChecked = document.getElementById('blockReport')?.checked;
-            if (reportChecked) {
-                showToast('🚫 Blocked & Reported!', 'ban');
-            } else {
-                showToast('🚫 Transaction blocked!', 'ban');
-            }
+            showToast(reportChecked ? '🚫 Blocked & Reported!' : '🚫 Transaction blocked!', 'ban');
             
             currentAlert = null;
             updateUI();
@@ -2594,7 +2580,6 @@
             currentAlert = null;
             selectedReason = null;
             
-            // Reset radio buttons
             document.querySelectorAll('input[name="reason"]').forEach(r => r.checked = false);
             
             updateUI();
