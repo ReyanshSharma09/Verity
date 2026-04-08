@@ -1,1657 +1,2447 @@
-Yes — here’s a **single self-contained `index.html`** file with:
-
-- built-in **transaction simulator**
-- **formula-based fraud detection**
-- **real-time auto-generated transactions**
-- **dashboard, transaction list, alert, risk analysis, support, and confirmation screens**
-- **Approve / Block / Report** interactions
-- no server, no ML backend
-
-Save this as `index.html` and open it in your browser.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SafePay - Fraud Detection Simulator</title>
-  <style>
-    :root{
-      --bg:#eef3f9;
-      --card:#ffffff;
-      --text:#122033;
-      --muted:#6b7a90;
-      --primary:#2563eb;
-      --primary2:#1d4ed8;
-      --good:#16a34a;
-      --warn:#f59e0b;
-      --bad:#ef4444;
-      --goodBg:#e8f9ef;
-      --warnBg:#fff6df;
-      --badBg:#ffecec;
-      --shadow:0 10px 30px rgba(18,32,51,.10);
-      --shadow2:0 8px 22px rgba(18,32,51,.16);
-      --radius:20px;
-      --radius2:14px;
-      --phone:#0f172a;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafePay - AI Fraud Detection</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      background:linear-gradient(135deg,#c7ddff 0%, #f5f7fb 35%, #dbeafe 100%);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--text);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-    }
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-light: #f1f5f9;
+            --bg-white: #ffffff;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-    .phone{
-      width:min(430px,100%);
-      height:min(920px, calc(100vh - 36px));
-      background:var(--bg);
-      border:10px solid var(--phone);
-      border-radius:38px;
-      overflow:hidden;
-      position:relative;
-      box-shadow:0 25px 80px rgba(0,0,0,.22);
-    }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-    .notch{
-      position:absolute;
-      top:0; left:50%;
-      transform:translateX(-50%);
-      width:150px; height:28px;
-      background:var(--phone);
-      border-radius:0 0 18px 18px;
-      z-index:15;
-    }
+        .phone-container {
+            width: 100%;
+            max-width: 420px;
+            height: 800px;
+            background: var(--bg-white);
+            border-radius: 45px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            position: relative;
+            border: 10px solid #1e293b;
+        }
 
-    .screen{
-      display:none;
-      height:100%;
-      overflow:auto;
-      padding-bottom:92px;
-      animation:fade .22s ease;
-    }
-    .screen.active{display:block}
-    @keyframes fade{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #1e293b;
+            border-radius: 0 0 20px 20px;
+            z-index: 100;
+        }
 
-    .topbar{
-      background:linear-gradient(135deg,var(--primary),var(--primary2));
-      color:#fff;
-      padding:46px 18px 18px;
-      position:sticky;
-      top:0;
-      z-index:10;
-      box-shadow:0 6px 16px rgba(37,99,235,.2);
-    }
-    .topbar-row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:800;
-      font-size:1.18rem;
-      letter-spacing:.2px;
-    }
-    .brand .logo{
-      width:34px; height:34px;
-      border-radius:10px;
-      display:grid;
-      place-items:center;
-      background:rgba(255,255,255,.15);
-      backdrop-filter: blur(8px);
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-      padding:7px 12px;
-      border-radius:999px;
-      font-size:.78rem;
-      font-weight:700;
-      white-space:nowrap;
-    }
-    .pill.good{background:rgba(22,163,74,.16); color:#d7ffe4}
-    .pill.warn{background:rgba(245,158,11,.18); color:#fff0c2}
-    .pill.bad{background:rgba(239,68,68,.16); color:#ffe1e1}
-    .pill.neutral{background:rgba(255,255,255,.14); color:#eaf1ff}
+        .screen {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 85px;
+            animation: fadeIn 0.3s ease;
+            background: var(--bg-light);
+        }
 
-    .content{padding:16px 16px 0}
-    .card{
-      background:var(--card);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:16px;
-      margin-bottom:14px;
-      border:1px solid rgba(18,32,51,.05);
-    }
-    .card.soft{
-      background:linear-gradient(180deg,#fff 0%, #f8fbff 100%);
-    }
+        .screen.active {
+            display: block;
+        }
 
-    .balance{
-      background:linear-gradient(135deg,#6d8cff,#7c3aed);
-      color:#fff;
-      position:relative;
-      overflow:hidden;
-    }
-    .balance::after{
-      content:"";
-      position:absolute;
-      right:-40px; top:-40px;
-      width:140px; height:140px;
-      background:radial-gradient(circle, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 70%);
-    }
-    .balance .label{font-size:.86rem; opacity:.85; margin-bottom:7px}
-    .balance .amount{font-size:2rem; font-weight:800; letter-spacing:.2px}
-    .balance .sub{margin-top:12px; display:flex; justify-content:space-between; gap:10px; font-size:.82rem; opacity:.9}
-    .mono{font-variant-numeric:tabular-nums; letter-spacing:1.2px}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
 
-    .hero-actions{
-      display:flex;
-      gap:10px;
-      margin-top:12px;
-      flex-wrap:wrap;
-    }
-    button, .chip{
-      border:none;
-      cursor:pointer;
-      font:inherit;
-      border-radius:14px;
-      transition:.18s transform, .18s opacity, .18s background;
-    }
-    button:active, .chip:active{transform:scale(.985)}
-    .btn{
-      padding:12px 14px;
-      font-weight:700;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      min-height:44px;
-    }
-    .btn.primary{background:#fff; color:var(--primary)}
-    .btn.primary:hover{opacity:.95}
-    .btn.dark{background:var(--text); color:#fff}
-    .btn.good{background:var(--good); color:#fff}
-    .btn.bad{background:var(--bad); color:#fff}
-    .btn.outline{
-      background:transparent;
-      border:1.5px solid #cbd5e1;
-      color:var(--text);
-    }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .grid-2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-bottom:14px;
-    }
-    .metric{
-      background:var(--card);
-      border-radius:16px;
-      padding:14px;
-      box-shadow:var(--shadow);
-      border:1px solid rgba(18,32,51,.05);
-    }
-    .metric .k{font-size:.78rem; color:var(--muted); margin-bottom:6px}
-    .metric .v{font-size:1.35rem; font-weight:800}
-    .metric .v.good{color:var(--good)}
-    .metric .v.warn{color:var(--warn)}
-    .metric .v.bad{color:var(--bad)}
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
 
-    .section-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin:5px 2px 10px;
-    }
-    .section-head h3{
-      margin:0;
-      font-size:1rem;
-    }
-    .section-head span{
-      color:var(--primary);
-      font-size:.86rem;
-      font-weight:700;
-      cursor:pointer;
-    }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
 
-    .alert-banner{
-      background:linear-gradient(135deg,#fff2f2,#ffe7e7);
-      border:1px solid #ffc3c3;
-      color:#7a1020;
-      border-radius:18px;
-      padding:14px 14px 12px;
-      box-shadow:var(--shadow);
-      margin-bottom:14px;
-      display:none;
-      cursor:pointer;
-      animation:pulse 1.4s infinite;
-    }
-    .alert-banner.show{display:block}
-    @keyframes pulse{
-      0%,100%{transform:translateY(0)}
-      50%{transform:translateY(-2px)}
-    }
-    .alert-banner .row{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-    }
-    .alert-banner .title{
-      font-weight:800;
-      margin-bottom:4px;
-    }
-    .alert-banner .desc{
-      font-size:.9rem;
-      color:#8b1c2b;
-      line-height:1.4;
-    }
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 45px 20px 25px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
 
-    .list{display:flex; flex-direction:column; gap:10px}
-    .txn{
-      background:var(--card);
-      border-radius:18px;
-      padding:12px 12px;
-      box-shadow:var(--shadow);
-      display:flex;
-      gap:12px;
-      align-items:center;
-      border:1px solid rgba(18,32,51,.05);
-      cursor:pointer;
-    }
-    .txn:hover{box-shadow:var(--shadow2)}
-    .txn .icon{
-      width:50px; height:50px;
-      border-radius:14px;
-      display:grid; place-items:center;
-      flex:0 0 auto;
-      font-size:1.25rem;
-      background:#eef3ff;
-    }
-    .txn.good .icon{background:var(--goodBg)}
-    .txn.warn .icon{background:var(--warnBg)}
-    .txn.bad .icon{background:var(--badBg)}
-    .txn .mid{flex:1; min-width:0}
-    .txn .name{
-      font-weight:800;
-      margin-bottom:4px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .txn .meta{
-      color:var(--muted);
-      font-size:.82rem;
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-    }
-    .txn .right{
-      text-align:right;
-      flex:0 0 auto;
-    }
-    .txn .amt{
-      font-weight:900;
-      font-size:1rem;
-    }
-    .tag{
-      display:inline-flex;
-      padding:5px 9px;
-      border-radius:999px;
-      font-size:.72rem;
-      font-weight:800;
-      margin-top:6px;
-    }
-    .tag.good{background:var(--goodBg); color:var(--good)}
-    .tag.warn{background:var(--warnBg); color:#a16207}
-    .tag.bad{background:var(--badBg); color:var(--bad)}
-    .tag.neutral{background:#eef2ff; color:#3730a3}
+        .header-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .filters{
-      display:flex;
-      gap:8px;
-      overflow:auto;
-      padding-bottom:2px;
-      margin-bottom:12px;
-    }
-    .filter{
-      padding:10px 14px;
-      background:#fff;
-      box-shadow:var(--shadow);
-      color:var(--muted);
-      font-weight:800;
-      white-space:nowrap;
-    }
-    .filter.active{
-      background:var(--primary);
-      color:#fff;
-    }
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .search{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      background:#fff;
-      border-radius:16px;
-      padding:12px 14px;
-      box-shadow:var(--shadow);
-      margin-bottom:12px;
-    }
-    .search input{
-      flex:1;
-      border:none;
-      outline:none;
-      font:inherit;
-      background:transparent;
-    }
+        .header-icons {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-    .risk-box{
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      box-shadow:var(--shadow);
-      margin-bottom:12px;
-      border:1px solid rgba(18,32,51,.05);
-    }
-    .risk-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .risk-top h2, .risk-top h3{margin:0}
-    .risk-score{
-      font-size:2rem;
-      font-weight:900;
-    }
-    .risk-score.good{color:var(--good)}
-    .risk-score.warn{color:var(--warn)}
-    .risk-score.bad{color:var(--bad)}
-    .bar{
-      height:11px;
-      border-radius:999px;
-      background:#e5e7eb;
-      overflow:hidden;
-    }
-    .fill{height:100%; border-radius:999px}
-    .fill.good{background:linear-gradient(90deg,#34d399,var(--good))}
-    .fill.warn{background:linear-gradient(90deg,#fbbf24,var(--warn))}
-    .fill.bad{background:linear-gradient(90deg,#fb7185,var(--bad))}
+        .header-icons i {
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
 
-    .why{
-      background:#fff7f7;
-      border:1px solid #fecaca;
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:12px;
-    }
-    .why h4{
-      margin:0 0 10px;
-      color:#9b1c1c;
-    }
-    .reason{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      padding:10px 0;
-      border-top:1px solid #f8caca;
-    }
-    .reason:first-of-type{border-top:none}
-    .reason .bullet{margin-top:1px}
-    .reason .t{font-weight:800}
-    .reason .d{font-size:.84rem; color:var(--muted); margin-top:2px; line-height:1.35}
+        .header-icons i:hover {
+            transform: scale(1.1);
+        }
 
-    .analysis-grid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
-    .factor{
-      background:#fff;
-      border-radius:16px;
-      padding:12px;
-      box-shadow:var(--shadow);
-    }
-    .factor .row{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:8px;
-    }
-    .factor .name{font-weight:800}
-    .factor .val{font-weight:900}
-    .factor .sub{font-size:.84rem; color:var(--muted); margin-top:8px; line-height:1.35}
+        .notification-badge {
+            position: relative;
+        }
 
-    .compare{
-      background:linear-gradient(135deg,#eff6ff,#eef2ff);
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:12px;
-      border:1px solid #dbeafe;
-    }
-    .compare h4{margin:0 0 10px; color:#1d4ed8}
-    .cmp-row{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      padding:9px 0;
-      border-top:1px solid rgba(29,78,216,.12);
-      font-size:.92rem;
-    }
-    .cmp-row:first-of-type{border-top:none}
+        .notification-badge.has-alerts::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            min-width: 18px;
+            height: 18px;
+            background: var(--danger);
+            border-radius: 50%;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
 
-    .actions{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin:14px 0 0;
-    }
+        .header-back {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 45px 20px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
 
-    .bottomnav{
-      position:absolute;
-      left:0; right:0; bottom:0;
-      background:#fff;
-      border-top:1px solid #e5e7eb;
-      display:flex;
-      justify-content:space-around;
-      padding:10px 0 12px;
-      z-index:20;
-    }
-    .navitem{
-      width:25%;
-      text-align:center;
-      color:var(--muted);
-      cursor:pointer;
-      font-size:.72rem;
-      font-weight:800;
-    }
-    .navitem .ic{font-size:1.25rem; margin-bottom:4px}
-    .navitem.active{color:var(--primary)}
+        .header-back i {
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
 
-    .floating{
-      position:absolute;
-      right:16px;
-      bottom:92px;
-      width:58px;
-      height:58px;
-      border-radius:50%;
-      background:linear-gradient(135deg,var(--primary),var(--primary2));
-      color:#fff;
-      display:grid;
-      place-items:center;
-      box-shadow:0 12px 28px rgba(37,99,235,.35);
-      z-index:25;
-      font-size:1.4rem;
-      font-weight:900;
-      cursor:pointer;
-    }
+        .header-back h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
 
-    .toggle{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      color:#fff;
-      font-size:.86rem;
-      font-weight:700;
-      margin-top:10px;
-    }
-    .switch{
-      width:48px; height:28px;
-      background:rgba(255,255,255,.25);
-      border-radius:999px;
-      position:relative;
-      cursor:pointer;
-      flex:0 0 auto;
-    }
-    .switch::after{
-      content:"";
-      position:absolute;
-      top:4px; left:4px;
-      width:20px; height:20px;
-      background:#fff;
-      border-radius:50%;
-      transition:.2s;
-    }
-    .switch.on{background:rgba(255,255,255,.45)}
-    .switch.on::after{left:24px}
+        /* Content */
+        .content {
+            padding: 20px;
+        }
 
-    .center{
-      text-align:center;
-    }
-    .successIcon{
-      width:92px; height:92px;
-      margin:6px auto 12px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      color:#fff;
-      font-size:2.4rem;
-      font-weight:900;
-      box-shadow:var(--shadow2);
-    }
-    .successIcon.good{background:linear-gradient(135deg,var(--good),#059669)}
-    .successIcon.bad{background:linear-gradient(135deg,var(--bad),#dc2626)}
+        /* Balance Card */
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
 
-    .support-grid{
-      display:grid;
-      gap:10px;
-      margin-bottom:12px;
-    }
-    .support-card{
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      box-shadow:var(--shadow);
-      display:flex;
-      gap:12px;
-      align-items:center;
-      cursor:pointer;
-    }
-    .support-card .big{
-      width:48px; height:48px;
-      border-radius:14px;
-      display:grid;
-      place-items:center;
-      font-size:1.2rem;
-      flex:0 0 auto;
-      background:#eef2ff;
-    }
-    .support-card:nth-child(1) .big{background:#dbeafe}
-    .support-card:nth-child(2) .big{background:#dcfce7}
-    .support-card:nth-child(3) .big{background:#fee2e2}
-    .support-card .t{font-weight:900}
-    .support-card .d{font-size:.84rem; color:var(--muted); margin-top:3px}
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
 
-    .chat{
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      box-shadow:var(--shadow);
-    }
-    .msgs{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      margin-bottom:12px;
-      max-height:210px;
-      overflow:auto;
-    }
-    .msg{
-      max-width:88%;
-      padding:10px 12px;
-      border-radius:16px;
-      font-size:.88rem;
-      line-height:1.35;
-    }
-    .msg.bot{
-      background:#f1f5f9;
-      color:#0f172a;
-      border-top-left-radius:6px;
-    }
-    .msg.user{
-      align-self:flex-end;
-      background:#dbeafe;
-      color:#0f172a;
-      border-top-right-radius:6px;
-    }
-    .chatrow{
-      display:flex;
-      gap:8px;
-    }
-    .chatrow input{
-      flex:1;
-      border:1px solid #dbe1ea;
-      border-radius:14px;
-      padding:12px 14px;
-      outline:none;
-      font:inherit;
-    }
+        .balance-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
 
-    .confirm-box{
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      box-shadow:var(--shadow);
-      margin-bottom:12px;
-    }
-    .confirm-box .amt{font-size:2rem; font-weight:900; color:var(--bad)}
-    .confirm-list{
-      margin-top:10px;
-      display:grid;
-      gap:8px;
-    }
-    .check{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      font-size:.9rem;
-      color:#172033;
-    }
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
 
-    .toast{
-      position:absolute;
-      left:50%;
-      bottom:104px;
-      transform:translateX(-50%) translateY(20px);
-      opacity:0;
-      pointer-events:none;
-      background:#0f172a;
-      color:#fff;
-      border-radius:999px;
-      padding:12px 16px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      box-shadow:0 16px 30px rgba(15,23,42,.25);
-      transition:.25s;
-      z-index:40;
-      max-width:88%;
-      text-align:left;
-      font-size:.9rem;
-    }
-    .toast.show{
-      opacity:1;
-      transform:translateX(-50%) translateY(0);
-    }
+        .balance-card-number {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            opacity: 0.8;
+        }
 
-    .tiny{
-      font-size:.78rem;
-      color:var(--muted);
-    }
+        .ml-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 15px;
+        }
 
-    .divider{
-      height:1px;
-      background:#e5e7eb;
-      margin:12px 0;
-    }
-  </style>
+        .ml-badge i {
+            color: #10b981;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border: 2px solid var(--danger);
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            animation: slideUp 0.5s ease;
+        }
+
+        .alert-banner:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .alert-banner.warning {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-color: var(--warning);
+        }
+
+        .alert-banner-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .alert-banner-header i {
+            font-size: 1.4rem;
+            color: var(--danger);
+            animation: shake 0.5s ease;
+        }
+
+        .alert-banner.warning .alert-banner-header i {
+            color: var(--warning);
+        }
+
+        .alert-banner-header span {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #991b1b;
+        }
+
+        .alert-banner.warning .alert-banner-header span {
+            color: #92400e;
+        }
+
+        .alert-banner p {
+            color: #991b1b;
+            font-size: 0.9rem;
+        }
+
+        .alert-banner.warning p {
+            color: #a16207;
+        }
+
+        .alert-banner-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            background: var(--danger);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .alert-banner.warning .alert-banner-btn {
+            background: var(--warning);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .stat-card .value.danger { color: var(--danger); }
+        .stat-card .value.success { color: var(--success); }
+        .stat-card .value.warning { color: var(--warning); }
+
+        /* Section Title */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title span {
+            color: var(--primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Transaction Card */
+        .transaction-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            animation: slideUp 0.4s ease;
+        }
+
+        .transaction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .transaction-card.danger {
+            border-color: var(--danger);
+            background: linear-gradient(135deg, #fef2f2, white);
+        }
+
+        .transaction-card.warning {
+            border-color: var(--warning);
+            background: linear-gradient(135deg, #fffbeb, white);
+        }
+
+        .transaction-card.success {
+            border-color: var(--success);
+        }
+
+        .transaction-card.new {
+            animation: slideUp 0.4s ease, pulse 0.5s ease;
+        }
+
+        .transaction-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .transaction-icon.danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .transaction-icon.success {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .transaction-icon.warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .transaction-meta {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+        }
+
+        .transaction-amount {
+            text-align: right;
+        }
+
+        .transaction-amount .amount {
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+        }
+
+        .transaction-amount .status {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-top: 5px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .status.danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .status.warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        /* Fraud Alert Screen */
+        .fraud-header {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+            padding: 50px 20px 35px;
+            text-align: center;
+        }
+
+        .fraud-header.warning {
+            background: linear-gradient(135deg, var(--warning), #d97706);
+        }
+
+        .fraud-header i.main-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        .fraud-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .fraud-details {
+            background: white;
+            margin: -25px 20px 20px;
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .fraud-merchant {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .fraud-merchant h3 {
+            font-size: 1.4rem;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .fraud-merchant .location {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .fraud-merchant .amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--danger);
+            margin-top: 15px;
+        }
+
+        .fraud-merchant .time {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        /* Risk Score */
+        .risk-score {
+            margin-bottom: 20px;
+        }
+
+        .risk-score-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .risk-score-header span {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .risk-score-header .score {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .risk-score-header .score.danger { color: var(--danger); }
+        .risk-score-header .score.warning { color: var(--warning); }
+        .risk-score-header .score.success { color: var(--success); }
+
+        .risk-bar {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+
+        .risk-bar-fill.danger {
+            background: linear-gradient(90deg, var(--warning), var(--danger));
+        }
+
+        .risk-bar-fill.warning {
+            background: linear-gradient(90deg, #fcd34d, var(--warning));
+        }
+
+        .risk-bar-fill.success {
+            background: var(--success);
+        }
+
+        /* Formula Display */
+        .formula-box {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 20px;
+            color: white;
+            font-family: 'Courier New', monospace;
+        }
+
+        .formula-box h4 {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .formula-box .formula {
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .formula-box .highlight {
+            color: #fbbf24;
+        }
+
+        .formula-box .value {
+            color: #4ade80;
+        }
+
+        /* Why Flagged */
+        .why-flagged {
+            background: #fef2f2;
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
+        }
+
+        .why-flagged.warning {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .why-flagged h4 {
+            color: var(--danger);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .why-flagged.warning h4 {
+            color: var(--warning);
+        }
+
+        .why-flagged ul {
+            list-style: none;
+        }
+
+        .why-flagged li {
+            padding: 10px 0;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid #fecaca;
+        }
+
+        .why-flagged.warning li {
+            border-color: #fde68a;
+        }
+
+        .why-flagged li:last-child {
+            border-bottom: none;
+        }
+
+        .why-flagged li i {
+            color: var(--danger);
+            margin-top: 2px;
+        }
+
+        .why-flagged.warning li i {
+            color: var(--warning);
+        }
+
+        .why-flagged li .factor-text {
+            flex: 1;
+        }
+
+        .why-flagged li .factor-title {
+            font-weight: 600;
+        }
+
+        .why-flagged li .factor-detail {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-top: 2px;
+        }
+
+        .why-flagged li .factor-score {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .btn {
+            padding: 18px 24px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text-dark);
+        }
+
+        /* Risk Analysis Items */
+        .risk-item {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .risk-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .risk-item-header .label {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .risk-item-header .percentage {
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .risk-item-header .percentage.danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .risk-item-header .percentage.warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .risk-item-header .percentage.success {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .risk-item p {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            margin-top: 10px;
+        }
+
+        /* Comparison Box */
+        .comparison-box {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-box h4 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .comparison-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #bfdbfe;
+        }
+
+        .comparison-row:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-row .value.danger {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        /* Support Cards */
+        .support-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .support-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .support-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .support-icon.chat { background: #dbeafe; color: var(--primary); }
+        .support-icon.call { background: #d1fae5; color: var(--success); }
+        .support-icon.report { background: #fee2e2; color: var(--danger); }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 18px 0;
+            border-top: 1px solid #e2e8f0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: var(--text-gray);
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            font-size: 1.4rem;
+        }
+
+        .nav-item span {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            animation: scaleIn 0.5s ease;
+        }
+
+        .success-icon.green {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .success-icon.red {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-icon i {
+            font-size: 3.5rem;
+            color: white;
+        }
+
+        .success-screen h2 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 1.6rem;
+        }
+
+        .success-screen p {
+            color: var(--text-gray);
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-dark);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Generate Button */
+        .generate-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.6rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.3s;
+            z-index: 90;
+            border: none;
+        }
+
+        .generate-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .generate-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .filter-tab {
+            padding: 10px 18px;
+            border-radius: 25px;
+            background: white;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+            border: none;
+        }
+
+        .filter-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Search */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        /* Date Divider */
+        .date-divider {
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 20px 0 12px;
+            padding-left: 5px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-gray);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        /* Confirm Details */
+        .confirm-details {
+            background: #f8fafc;
+            border-radius: 18px;
+            padding: 25px;
+            margin: 0 20px 20px;
+            text-align: center;
+        }
+
+        .confirm-details .amount {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--danger);
+            margin: 12px 0;
+        }
+
+        .what-happens {
+            padding: 0 20px 20px;
+        }
+
+        .what-happens h4 {
+            margin-bottom: 15px;
+        }
+
+        .what-happens-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+        }
+
+        .what-happens-item i {
+            color: var(--success);
+            font-size: 1.3rem;
+        }
+
+        /* Checkbox */
+        .checkbox-group {
+            padding: 0 20px 20px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 15px 18px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+
+        .checkbox-item input {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--primary);
+        }
+
+        /* Security Badge */
+        .security-badge {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 18px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .security-badge i {
+            font-size: 2.5rem;
+            color: var(--success);
+            margin-bottom: 12px;
+        }
+
+        .security-badge h4 {
+            color: #065f46;
+        }
+
+        .security-badge p {
+            color: #047857;
+            font-size: 0.9rem;
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .faq-item:hover {
+            background: #f8fafc;
+        }
+
+        /* Live indicator */
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: var(--success);
+            margin-left: 10px;
+        }
+
+        .live-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        /* Processing animation */
+        .processing {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .processing.show {
+            display: flex;
+        }
+
+        .processing .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <div class="phone">
-    <div class="notch"></div>
+    <div class="phone-container">
+        <div class="phone-notch"></div>
 
-    <!-- DASHBOARD -->
-    <section class="screen active" id="screen-home">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">🛡️</div>
-            <div>SafePay</div>
-          </div>
-          <div class="pill neutral">Live Simulator</div>
-        </div>
-        <div class="toggle">
-          <div class="switch on" id="autoSwitch" onclick="toggleAuto()"></div>
-          <div>Auto generate transactions</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="card balance">
-          <div class="label">Current Balance</div>
-          <div class="amount" id="balanceText">$12,847.50</div>
-          <div class="sub">
-            <div>Card •••• <span class="mono">4829</span></div>
-            <div id="liveClock">--:--:--</div>
-          </div>
-
-          <div class="hero-actions">
-            <button class="btn primary" onclick="simulateNow()">➕ Simulate Transaction</button>
-            <button class="btn dark" onclick="showScreen('screen-transactions')">View All</button>
-          </div>
-        </div>
-
-        <div class="alert-banner" id="alertBanner" onclick="openCurrentAlert()">
-          <div class="row">
-            <div>
-              <div class="title" id="alertTitle">Suspicious activity detected</div>
-              <div class="desc" id="alertDesc">Review the flagged transaction</div>
+        <!-- ==================== SCREEN 1: HOME ==================== -->
+        <div class="screen active" id="screen-home">
+            <div class="header">
+                <div class="header-main">
+                    <h1>
+                        <i class="fas fa-shield-alt"></i> SafePay
+                        <span class="live-indicator">LIVE</span>
+                    </h1>
+                    <div class="header-icons">
+                        <i class="fas fa-bell notification-badge" data-count="0" id="alertBadge" onclick="showScreen('screen-transactions')"></i>
+                        <i class="fas fa-user-circle" onclick="showScreen('screen-support')"></i>
+                    </div>
+                </div>
             </div>
-            <div class="pill bad">⚠️ Alert</div>
-          </div>
-        </div>
 
-        <div class="grid-2">
-          <div class="metric">
-            <div class="k">Transactions</div>
-            <div class="v" id="mTotal">0</div>
-          </div>
-          <div class="metric">
-            <div class="k">Pending Risk</div>
-            <div class="v warn" id="mPending">0</div>
-          </div>
-          <div class="metric">
-            <div class="k">Blocked</div>
-            <div class="v bad" id="mBlocked">0</div>
-          </div>
-          <div class="metric">
-            <div class="k">Fraud Prevention</div>
-            <div class="v good" id="mSaved">$0</div>
-          </div>
-        </div>
+            <div class="content">
+                <!-- Balance Card -->
+                <div class="balance-card">
+                    <div class="balance-label">Total Balance</div>
+                    <div class="balance-amount" id="balanceAmount">$12,847.50</div>
+                    <div class="balance-card-number">•••• •••• •••• 4829</div>
+                    <div class="ml-badge">
+                        <i class="fas fa-brain"></i>
+                        <span>AI Fraud Detection Active</span>
+                    </div>
+                </div>
 
-        <div class="section-head">
-          <h3>Recent Transactions</h3>
-          <span onclick="showScreen('screen-transactions')">View all</span>
-        </div>
-        <div class="list" id="recentList"></div>
-      </div>
+                <!-- Alert Banner -->
+                <div class="alert-banner" id="alertBanner" style="display: none;" onclick="showCurrentAlert()">
+                    <div class="alert-banner-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="alertCount">1 Alert Pending</span>
+                    </div>
+                    <p id="alertMessage">Suspicious transaction detected</p>
+                    <span class="alert-banner-btn">Review Now <i class="fas fa-arrow-right"></i></span>
+                </div>
 
-      <div class="floating" onclick="simulateNow()" title="Generate transaction">+</div>
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Transactions</div>
+                        <div class="value" id="statTotal">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Blocked</div>
+                        <div class="value danger" id="statBlocked">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Protected</div>
+                        <div class="value success" id="statProtected">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Avg Risk</div>
+                        <div class="value" id="statRisk">0%</div>
+                    </div>
+                </div>
 
-      <div class="bottomnav">
-        <div class="navitem active" data-nav="screen-home" onclick="showScreen('screen-home')">
-          <div class="ic">🏠</div><div>Home</div>
-        </div>
-        <div class="navitem" data-nav="screen-transactions" onclick="showScreen('screen-transactions')">
-          <div class="ic">💳</div><div>Transactions</div>
-        </div>
-        <div class="navitem" data-nav="screen-analysis" onclick="showAnalysisForCurrent()">
-          <div class="ic">📊</div><div>Analysis</div>
-        </div>
-        <div class="navitem" data-nav="screen-support" onclick="showScreen('screen-support')">
-          <div class="ic">⚙️</div><div>Support</div>
-        </div>
-      </div>
-    </section>
+                <!-- Recent Transactions -->
+                <div class="section-title">
+                    Recent Transactions
+                    <span onclick="showScreen('screen-transactions')">View All</span>
+                </div>
 
-    <!-- TRANSACTION LIST -->
-    <section class="screen" id="screen-transactions">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">💳</div>
-            <div>Transactions</div>
-          </div>
-          <div class="pill neutral">All data is simulated</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="search">
-          🔎 <input id="search" placeholder="Search merchant or location..." oninput="renderAll()" />
-        </div>
-
-        <div class="filters">
-          <button class="chip filter active" data-filter="all" onclick="setFilter('all')">All</button>
-          <button class="chip filter" data-filter="flagged" onclick="setFilter('flagged')">Flagged</button>
-          <button class="chip filter" data-filter="approved" onclick="setFilter('approved')">Approved</button>
-          <button class="chip filter" data-filter="blocked" onclick="setFilter('blocked')">Blocked</button>
-        </div>
-
-        <div class="section-head">
-          <h3>Transaction Feed</h3>
-          <span onclick="simulateNow()">Generate new</span>
-        </div>
-
-        <div class="list" id="allList"></div>
-      </div>
-
-      <div class="bottomnav">
-        <div class="navitem" data-nav="screen-home" onclick="showScreen('screen-home')">
-          <div class="ic">🏠</div><div>Home</div>
-        </div>
-        <div class="navitem active" data-nav="screen-transactions" onclick="showScreen('screen-transactions')">
-          <div class="ic">💳</div><div>Transactions</div>
-        </div>
-        <div class="navitem" data-nav="screen-analysis" onclick="showAnalysisForCurrent()">
-          <div class="ic">📊</div><div>Analysis</div>
-        </div>
-        <div class="navitem" data-nav="screen-support" onclick="showScreen('screen-support')">
-          <div class="ic">⚙️</div><div>Support</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FRAUD ALERT -->
-    <section class="screen" id="screen-alert">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">⚠️</div>
-            <div>Fraud Alert</div>
-          </div>
-          <div class="pill bad">High risk transaction</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="risk-box">
-          <div class="risk-top">
-            <div>
-              <h3 id="alertMerchant">Merchant</h3>
-              <div class="tiny" id="alertLocation">Location</div>
+                <div id="recentTransactions">
+                    <div class="empty-state">
+                        <i class="fas fa-credit-card"></i>
+                        <p>Click + to simulate transactions</p>
+                    </div>
+                </div>
             </div>
-            <div style="text-align:right">
-              <div class="risk-score bad" id="alertScore">0/100</div>
-              <div class="tiny" id="alertLevel">HIGH</div>
+
+            <!-- Generate Transaction Button -->
+            <button class="generate-btn" onclick="generateTransaction()" title="Simulate Transaction">
+                <i class="fas fa-plus"></i>
+            </button>
+
+            <div class="bottom-nav">
+                <div class="nav-item active" onclick="showScreen('screen-home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-transactions')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-formula')">
+                    <i class="fas fa-flask"></i>
+                    <span>Formula</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-support')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
             </div>
-          </div>
-          <div class="bar"><div class="fill bad" id="alertBar" style="width:0%"></div></div>
-          <div style="margin-top:12px; font-size:1.5rem; font-weight:900" id="alertAmount">$0.00</div>
-          <div class="tiny" id="alertTime">Time</div>
         </div>
 
-        <div class="why">
-          <h4>Why flagged</h4>
-          <div id="alertReasons"></div>
-        </div>
-
-        <div class="actions">
-          <button class="btn good" onclick="approveCurrent()">✅ Approve</button>
-          <button class="btn bad" onclick="goBlockConfirm()">🚫 Block</button>
-          <button class="btn outline" onclick="showAnalysisForCurrent()">📊 View risk analysis</button>
-        </div>
-      </div>
-
-      <div class="bottomnav">
-        <div class="navitem" data-nav="screen-home" onclick="showScreen('screen-home')">
-          <div class="ic">🏠</div><div>Home</div>
-        </div>
-        <div class="navitem" data-nav="screen-transactions" onclick="showScreen('screen-transactions')">
-          <div class="ic">💳</div><div>Transactions</div>
-        </div>
-        <div class="navitem active" data-nav="screen-alert" onclick="showScreen('screen-alert')">
-          <div class="ic">⚠️</div><div>Alert</div>
-        </div>
-        <div class="navitem" data-nav="screen-support" onclick="showScreen('screen-support')">
-          <div class="ic">⚙️</div><div>Support</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ANALYSIS -->
-    <section class="screen" id="screen-analysis">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">📊</div>
-            <div>Risk Analysis</div>
-          </div>
-          <div class="pill neutral">Formula-based engine</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="risk-box">
-          <div class="risk-top">
-            <div>
-              <h3 id="anMerchant">Merchant</h3>
-              <div class="tiny" id="anLocation">Location</div>
+        <!-- ==================== SCREEN 2: ALL TRANSACTIONS ==================== -->
+        <div class="screen" id="screen-transactions">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
+                <h2>All Transactions</h2>
             </div>
-            <div style="text-align:right">
-              <div class="risk-score" id="anScore">0/100</div>
-              <div class="tiny" id="anLevel">Risk level</div>
+
+            <div class="content">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search transactions..." id="searchInput" oninput="filterTransactions()">
+                </div>
+
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all" onclick="setFilter('all', this)">All</button>
+                    <button class="filter-tab" data-filter="flagged" onclick="setFilter('flagged', this)">⚠️ Flagged</button>
+                    <button class="filter-tab" data-filter="approved" onclick="setFilter('approved', this)">✓ Safe</button>
+                    <button class="filter-tab" data-filter="blocked" onclick="setFilter('blocked', this)">🚫 Blocked</button>
+                </div>
+
+                <div id="allTransactions">
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <p>No transactions yet</p>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="bar"><div class="fill" id="anBar" style="width:0%"></div></div>
-          <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px">
-            <div>
-              <div class="tiny">Amount</div>
-              <div style="font-weight:900" id="anAmount">$0.00</div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item active" onclick="showScreen('screen-transactions')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-formula')">
+                    <i class="fas fa-flask"></i>
+                    <span>Formula</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-support')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
             </div>
-            <div style="text-align:right">
-              <div class="tiny">Date/Time</div>
-              <div style="font-weight:900" id="anTime">-</div>
+        </div>
+
+        <!-- ==================== SCREEN 3: FRAUD ALERT ==================== -->
+        <div class="screen" id="screen-fraud-alert">
+            <div class="fraud-header" id="fraudHeader">
+                <i class="fas fa-exclamation-circle main-icon"></i>
+                <h2 id="fraudTitle">Suspicious Activity Detected</h2>
+                <p>Real-time AI Analysis</p>
             </div>
-          </div>
-        </div>
 
-        <div class="card soft">
-          <div class="section-head" style="margin:0 0 8px">
-            <h3>Detection Formula</h3>
-          </div>
-          <div class="tiny" style="line-height:1.5" id="formulaText">
-            Risk = amount + location + merchant + time + velocity + channel
-          </div>
-          <div class="divider"></div>
-          <div class="tiny">Weights used in the simulator:</div>
-          <div class="tiny mono">Amount 30% • Location 25% • Merchant 20% • Time 10% • Velocity 10% • Channel 5%</div>
-        </div>
+            <div class="fraud-details">
+                <div class="fraud-merchant">
+                    <h3 id="fraudMerchant">Loading...</h3>
+                    <div class="location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="fraudLocation">Loading...</span>
+                    </div>
+                    <div class="amount" id="fraudAmount">$0.00</div>
+                    <div class="time" id="fraudTime">
+                        <i class="fas fa-clock"></i> Just now
+                    </div>
+                </div>
 
-        <div class="section-head">
-          <h3>Factor Breakdown</h3>
-          <span onclick="simulateNow()">New example</span>
-        </div>
-        <div class="analysis-grid" id="factorGrid"></div>
+                <!-- Risk Score -->
+                <div class="risk-score">
+                    <div class="risk-score-header">
+                        <span><i class="fas fa-brain"></i> Risk Score</span>
+                        <span class="score" id="fraudScore">0/100</span>
+                    </div>
+                    <div class="risk-bar">
+                        <div class="risk-bar-fill" id="fraudScoreBar" style="width: 0%"></div>
+                    </div>
+                </div>
 
-        <div class="compare">
-          <h4>Spending comparison</h4>
-          <div class="cmp-row"><span>Your average transaction</span><b id="cmpAvg">$48.50</b></div>
-          <div class="cmp-row"><span>This transaction</span><b id="cmpTxn">$0.00</b></div>
-          <div class="cmp-row"><span>Distance from home</span><b id="cmpDist">0 mi</b></div>
-          <div class="cmp-row"><span>Velocity in last 30 min</span><b id="cmpVel">0</b></div>
-        </div>
+                <!-- Formula Display -->
+                <div class="formula-box">
+                    <h4><i class="fas fa-calculator"></i> DETECTION FORMULA</h4>
+                    <div class="formula" id="formulaDisplay">
+                        Loading formula...
+                    </div>
+                </div>
 
-        <div class="actions">
-          <button class="btn good" onclick="approveCurrent()">✅ Approve</button>
-          <button class="btn bad" onclick="goBlockConfirm()">🚫 Block transaction</button>
-        </div>
-      </div>
-
-      <div class="bottomnav">
-        <div class="navitem" data-nav="screen-home" onclick="showScreen('screen-home')">
-          <div class="ic">🏠</div><div>Home</div>
-        </div>
-        <div class="navitem" data-nav="screen-transactions" onclick="showScreen('screen-transactions')">
-          <div class="ic">💳</div><div>Transactions</div>
-        </div>
-        <div class="navitem active" data-nav="screen-analysis" onclick="showAnalysisForCurrent()">
-          <div class="ic">📊</div><div>Analysis</div>
-        </div>
-        <div class="navitem" data-nav="screen-support" onclick="showScreen('screen-support')">
-          <div class="ic">⚙️</div><div>Support</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- BLOCK CONFIRM -->
-    <section class="screen" id="screen-confirm">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">🚫</div>
-            <div>Confirm Block</div>
-          </div>
-          <div class="pill bad">Final step</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="center card soft">
-          <div class="successIcon bad">🛡️</div>
-          <h2 style="margin:0 0 6px">Block this transaction?</h2>
-          <div class="tiny">This will prevent the charge and mark it as fraud.</div>
-        </div>
-
-        <div class="confirm-box">
-          <div style="font-weight:900;font-size:1.08rem" id="confirmMerchant">Merchant</div>
-          <div class="tiny" id="confirmLocation">Location</div>
-          <div class="amt" id="confirmAmount">$0.00</div>
-          <div class="tiny mono" id="confirmCard">Card ending •••• 4829</div>
-
-          <div class="confirm-list">
-            <div class="check">✔ Transaction will be blocked immediately</div>
-            <div class="check">✔ Card can be frozen for safety</div>
-            <div class="check">✔ Fraud report can be filed</div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button class="btn bad" onclick="blockCurrent()">🚫 Confirm Block</button>
-          <button class="btn outline" onclick="showScreen('screen-alert')">Cancel</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- APPROVE SUCCESS -->
-    <section class="screen" id="screen-approve-success">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">✅</div>
-            <div>Approved</div>
-          </div>
-          <div class="pill good">Resolved</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="card center soft">
-          <div class="successIcon good">✓</div>
-          <h2 style="margin:0 0 8px">Transaction approved</h2>
-          <div class="tiny" id="approveText">This transaction was marked safe and added to the user’s normal pattern.</div>
-          <div class="hero-actions" style="justify-content:center">
-            <button class="btn primary" onclick="showScreen('screen-home')">🏠 Back to Dashboard</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- BLOCK SUCCESS -->
-    <section class="screen" id="screen-block-success">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">🚫</div>
-            <div>Blocked</div>
-          </div>
-          <div class="pill bad">Fraud prevented</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="card center soft">
-          <div class="successIcon bad">✕</div>
-          <h2 style="margin:0 0 8px">Transaction blocked</h2>
-          <div class="tiny" id="blockText">The suspicious charge was stopped and flagged for review.</div>
-          <div class="hero-actions" style="justify-content:center">
-            <button class="btn primary" onclick="showScreen('screen-home')">🏠 Back to Dashboard</button>
-            <button class="btn outline" onclick="showScreen('screen-support')">⚙️ Report / Support</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SUPPORT -->
-    <section class="screen" id="screen-support">
-      <div class="topbar">
-        <div class="topbar-row">
-          <div class="brand">
-            <div class="logo">⚙️</div>
-            <div>Report / Support</div>
-          </div>
-          <div class="pill neutral">Help center</div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="support-grid">
-          <div class="support-card" onclick="reportFraud()">
-            <div class="big">🚨</div>
-            <div>
-              <div class="t">Report Fraud</div>
-              <div class="d">Submit this suspicious transaction to support</div>
+                <!-- Risk Factors -->
+                <div class="why-flagged" id="whyFlagged">
+                    <h4><i class="fas fa-flag"></i> Risk Factors</h4>
+                    <ul id="fraudReasons">
+                        <li>Loading...</li>
+                    </ul>
+                </div>
             </div>
-          </div>
 
-          <div class="support-card" onclick="chatReply('Start live chat')">
-            <div class="big">💬</div>
-            <div>
-              <div class="t">Live Chat</div>
-              <div class="d">Get instant help from the support team</div>
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="approveTransaction()">
+                    <i class="fas fa-check-circle"></i> This Was Me (Approve)
+                </button>
+                <button class="btn btn-danger" onclick="showScreen('screen-block-confirm')">
+                    <i class="fas fa-ban"></i> Block & Report
+                </button>
+                <button class="btn btn-outline" onclick="showScreen('screen-risk-analysis')">
+                    <i class="fas fa-chart-bar"></i> Full Analysis
+                </button>
             </div>
-          </div>
+        </div>
 
-          <div class="support-card" onclick="chatReply('Call support')">
-            <div class="big">📞</div>
-            <div>
-              <div class="t">Call Support</div>
-              <div class="d">Phone assistance available 24/7</div>
+        <!-- ==================== SCREEN 4: RISK ANALYSIS ==================== -->
+        <div class="screen" id="screen-risk-analysis">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-fraud-alert')"></i>
+                <h2>Risk Analysis</h2>
             </div>
-          </div>
-        </div>
 
-        <div class="chat">
-          <div class="section-head" style="margin:0 0 10px">
-            <h3>Chat / Help</h3>
-            <span onclick="chatReply('Fraud question')">Quick FAQ</span>
-          </div>
+            <div class="content">
+                <div class="fraud-merchant" style="background: white; padding: 20px; border-radius: 18px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <h3 id="analysisMerchant">Loading...</h3>
+                    <div class="amount" id="analysisAmount" style="color: var(--danger);">$0.00</div>
+                </div>
 
-          <div class="msgs" id="chatMsgs">
-            <div class="msg bot">Hi, I’m SafePay Support. How can I help you today?</div>
-            <div class="msg bot">You can report fraud, start chat, or ask about risk flags.</div>
-          </div>
+                <div class="section-title">
+                    <span style="color: var(--text-dark);">Risk Score Breakdown</span>
+                </div>
 
-          <div class="chatrow">
-            <input id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter'){sendChat()}" />
-            <button class="btn dark" onclick="sendChat()">Send</button>
-          </div>
-        </div>
+                <div id="riskBreakdown">
+                    <!-- Filled dynamically -->
+                </div>
 
-        <div class="card soft" style="margin-top:12px">
-          <div style="font-weight:900;margin-bottom:6px">Common questions</div>
-          <div class="tiny">• What makes a transaction suspicious?</div>
-          <div class="tiny">• How does the formula calculate risk?</div>
-          <div class="tiny">• When should I block a charge?</div>
-          <div class="tiny">• How do I report a fraudulent card charge?</div>
-        </div>
-      </div>
-    </section>
+                <div class="comparison-box">
+                    <h4><i class="fas fa-chart-bar"></i> Spending Comparison</h4>
+                    <div class="comparison-row">
+                        <span class="label">Your Average</span>
+                        <span class="value">$48.50</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label">This Transaction</span>
+                        <span class="value danger" id="comparisonAmount">$0.00</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label">Distance from Home</span>
+                        <span class="value" id="comparisonDistance">0 miles</span>
+                    </div>
+                    <div class="comparison-row">
+                        <span class="label">Risk Category</span>
+                        <span class="value" id="comparisonCategory">Normal</span>
+                    </div>
+                </div>
 
-    <div class="toast" id="toast">🔔 <span id="toastText">Ready</span></div>
-  </div>
-
-  <script>
-    const user = {
-      avg: 48.5,
-      home: { lat: 40.7128, lon: -74.0060, city: "New York, NY" },
-      card: "4829",
-      typicalHours: [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
-      typicalCategories: ["Shopping","Coffee","Groceries","Transport","Food","Streaming","Gas"],
-      suspiciousCategories: ["Gambling","Crypto","Wire Transfer","Unknown","Luxury","Foreign ATM"],
-      name: "Ava"
-    };
-
-    const normalMerchants = [
-      { name:"Amazon", emoji:"🛒", category:"Shopping", city:"Online", lat:40.73, lon:-73.93, suspicious:false },
-      { name:"Starbucks", emoji:"☕", category:"Coffee", city:"New York, NY", lat:40.75, lon:-73.99, suspicious:false },
-      { name:"Shell Gas", emoji:"⛽", category:"Gas", city:"Jersey City, NJ", lat:40.72, lon:-74.04, suspicious:false },
-      { name:"Whole Foods", emoji:"🥬", category:"Groceries", city:"Brooklyn, NY", lat:40.68, lon:-73.95, suspicious:false },
-      { name:"Uber", emoji:"🚗", category:"Transport", city:"New York, NY", lat:40.71, lon:-74.00, suspicious:false },
-      { name:"Chipotle", emoji:"🌯", category:"Food", city:"New York, NY", lat:40.73, lon:-73.99, suspicious:false },
-      { name:"Netflix", emoji:"🎬", category:"Streaming", city:"Online", lat:40.73, lon:-73.93, suspicious:false },
-      { name:"Best Buy", emoji:"📺", category:"Shopping", city:"New York, NY", lat:40.75, lon:-73.98, suspicious:false },
-      { name:"CVS Pharmacy", emoji:"💊", category:"Groceries", city:"New York, NY", lat:40.74, lon:-73.98, suspicious:false },
-      { name:"Target", emoji:"🎯", category:"Shopping", city:"Jersey City, NJ", lat:40.72, lon:-74.04, suspicious:false }
-    ];
-
-    const suspiciousMerchants = [
-      { name:"Las Vegas Casino", emoji:"🎲", category:"Gambling", city:"Las Vegas, NV", lat:36.1699, lon:-115.1398, suspicious:true },
-      { name:"CryptoX Wallet", emoji:"₿", category:"Crypto", city:"Miami, FL", lat:25.7617, lon:-80.1918, suspicious:true },
-      { name:"Wire Transfer Intl", emoji:"🌐", category:"Wire Transfer", city:"Lagos, Nigeria", lat:6.5244, lon:3.3792, suspicious:true },
-      { name:"Unknown Merchant", emoji:"❓", category:"Unknown", city:"Unknown Location", lat:51.5074, lon:-0.1278, suspicious:true },
-      { name:"Luxury Jewelry", emoji:"💎", category:"Luxury", city:"Dubai, UAE", lat:25.2048, lon:55.2708, suspicious:true },
-      { name:"Foreign ATM Withdrawal", emoji:"🏧", category:"Foreign ATM", city:"Bangkok, Thailand", lat:13.7563, lon:100.5018, suspicious:true }
-    ];
-
-    let transactions = [];
-    let currentTxn = null;
-    let autoOn = true;
-    let activeFilter = "all";
-    let timer = null;
-
-    function rand(min, max){ return Math.random() * (max - min) + min; }
-    function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-    function money(n){ return "$" + n.toFixed(2); }
-    function distanceMiles(a, b){
-      const R = 3958.8;
-      const dLat = (b.lat - a.lat) * Math.PI / 180;
-      const dLon = (b.lon - a.lon) * Math.PI / 180;
-      const lat1 = a.lat * Math.PI / 180;
-      const lat2 = b.lat * Math.PI / 180;
-      const x = Math.sin(dLat/2)**2 + Math.sin(dLon/2)**2 * Math.cos(lat1) * Math.cos(lat2);
-      return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-    }
-    function fmtRelative(ms){
-      const s = Math.floor((Date.now() - ms) / 1000);
-      if (s < 60) return "just now";
-      if (s < 3600) return `${Math.floor(s/60)} min ago`;
-      if (s < 86400) return `${Math.floor(s/3600)} hr ago`;
-      const d = new Date(ms);
-      return d.toLocaleDateString([], { month:"short", day:"numeric" }) + " " + d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-    }
-    function fmtTime(ms){
-      return new Date(ms).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-    }
-
-    function scoreTransaction(tx){
-      const amountRatio = tx.amount / user.avg;
-      const amountScore = clamp((amountRatio - 1) * 6, 0, 30);
-
-      const locationScore = clamp(tx.distance / 80, 0, 25);
-
-      const merchantScore = tx.suspiciousMerchant ? 20 : (tx.unusualCategory ? 10 : 4);
-
-      const timeScore = (tx.hour < 6 || tx.hour > 22) ? 10 : 0;
-
-      const recentCount = transactions.filter(t => Date.now() - t.createdAt < 30 * 60 * 1000).length;
-      const velocityScore = clamp((recentCount - 2) * 3, 0, 10);
-
-      const channelScore = tx.channel === "Online" ? 5 : 0;
-
-      const total = Math.round(amountScore + locationScore + merchantScore + timeScore + velocityScore + channelScore);
-
-      const level = total >= 70 ? "high" : total >= 40 ? "medium" : "low";
-      const color = level === "high" ? "bad" : level === "medium" ? "warn" : "good";
-
-      const reasons = [];
-      if (amountRatio >= 4) reasons.push({
-        title:"Unusually high amount",
-        detail:`${money(tx.amount)} is ${amountRatio.toFixed(1)}x your average spend of ${money(user.avg)}.`
-      });
-      else if (amountRatio >= 2) reasons.push({
-        title:"Higher than usual amount",
-        detail:`${money(tx.amount)} is ${amountRatio.toFixed(1)}x your average spend.`
-      });
-
-      if (tx.distance >= 300) reasons.push({
-        title:"Far from trusted location",
-        detail:`This merchant is about ${Math.round(tx.distance)} miles from your home city.`
-      });
-
-      if (tx.suspiciousMerchant) reasons.push({
-        title:"High-risk merchant category",
-        detail:`${tx.category} is often associated with fraud or chargebacks.`
-      });
-
-      if (tx.unusualCategory) reasons.push({
-        title:"New spending category",
-        detail:`You usually spend on ${user.typicalCategories.join(", ").toLowerCase()}, not ${tx.category.toLowerCase()}.`
-      });
-
-      if (tx.hour < 6 || tx.hour > 22) reasons.push({
-        title:"Odd time of day",
-        detail:`This was created at ${tx.hour.toString().padStart(2,"0")}:${String(tx.minute).padStart(2,"0")} outside your normal pattern.`
-      });
-
-      if (velocityScore > 0) reasons.push({
-        title:"Burst activity",
-        detail:`There are ${recentCount} transactions in the last 30 minutes.`
-      });
-
-      if (channelScore > 0) reasons.push({
-        title:"Online / card-not-present",
-        detail:"Online payments carry a slightly higher risk in this simulator."
-      });
-
-      return { total: clamp(total, 0, 100), level, color, reasons,
-        breakdown: { amountScore, locationScore, merchantScore, timeScore, velocityScore, channelScore },
-        amountRatio, recentCount
-      };
-    }
-
-    function generateTransaction(forceFraud = null){
-      const fraud = forceFraud === null ? Math.random() < 0.28 : forceFraud;
-      const source = fraud ? suspiciousMerchants : normalMerchants;
-      const merchant = pick(source);
-
-      const hour = fraud ? pick([0,1,2,3,4,5,23]) : pick(user.typicalHours);
-      const minute = Math.floor(rand(0,59));
-      const createdAt = Date.now() - Math.floor(rand(1000, 7 * 60 * 60 * 1000));
-
-      let amount;
-      if (fraud){
-        const high = pick([499.99, 899.99, 1240, 2450, 3499, 4999]);
-        amount = Math.random() < 0.6 ? high : rand(450, 5000);
-      } else {
-        const small = rand(4, 150);
-        amount = Math.random() < 0.85 ? small : rand(150, 320);
-      }
-
-      const tx = {
-        id: "TX" + Math.floor(rand(100000,999999)),
-        merchant: merchant.name,
-        emoji: merchant.emoji,
-        category: merchant.category,
-        city: merchant.city,
-        lat: merchant.lat,
-        lon: merchant.lon,
-        amount: Math.round(amount * 100) / 100,
-        hour,
-        minute,
-        createdAt,
-        channel: merchant.suspicious ? "Online" : (Math.random() < 0.35 ? "Tap" : "Chip"),
-        suspiciousMerchant: merchant.suspicious,
-        unusualCategory: !user.typicalCategories.includes(merchant.category)
-      };
-
-      tx.distance = distanceMiles(user.home, tx);
-      tx.fraud = fraud;
-      tx.score = scoreTransaction(tx);
-      tx.status = tx.score.level === "high" ? "pending" : "verified";
-      tx.riskColor = tx.score.color;
-      tx.riskLabel = tx.score.level === "high" ? "HIGH" : tx.score.level === "medium" ? "MEDIUM" : "LOW";
-
-      transactions.unshift(tx);
-
-      // keep list manageable
-      if (transactions.length > 40) transactions = transactions.slice(0, 40);
-
-      if (tx.status === "pending") currentTxn = tx;
-      updateUI();
-
-      if (tx.status === "pending"){
-        showToast(`Suspicious transaction detected: ${tx.merchant}`, "⚠️");
-        showBanner(tx);
-      } else {
-        hideBannerIfNone();
-      }
-
-      return tx;
-    }
-
-    function seedData(){
-      transactions = [];
-      for (let i = 0; i < 8; i++) generateTransaction(false);
-      generateTransaction(true); // add one clear alert
-      renderAll();
-      updateUI();
-      currentTxn = transactions.find(t => t.status === "pending") || transactions[0];
-      fillScreens(currentTxn);
-      showBanner(currentTxn);
-    }
-
-    function renderTxn(tx){
-      const cls = tx.status === "blocked" ? "bad" : tx.status === "approved" ? "good" :
-                  tx.score.level === "high" ? "bad" : tx.score.level === "medium" ? "warn" : "good";
-      const statusText = tx.status === "blocked" ? "Blocked" :
-                         tx.status === "approved" ? "Approved" :
-                         tx.status === "pending" ? "Needs review" :
-                         tx.score.level === "high" ? "High risk" :
-                         tx.score.level === "medium" ? "Monitor" : "Verified";
-
-      return `
-        <div class="txn ${cls}" onclick="openTxn('${tx.id}')">
-          <div class="icon">${tx.emoji}</div>
-          <div class="mid">
-            <div class="name">${tx.merchant}</div>
-            <div class="meta">
-              <span>${tx.category}</span>
-              <span>•</span>
-              <span>${tx.city}</span>
-              <span>•</span>
-              <span>${fmtRelative(tx.createdAt)}</span>
+                <div class="formula-box">
+                    <h4><i class="fas fa-code"></i> RISK CALCULATION</h4>
+                    <div class="formula" id="fullFormula">
+                        Loading...
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="right">
-            <div class="amt">-${money(tx.amount).slice(1)}</div>
-            <div class="tag ${cls}">${statusText} • ${tx.score.total}/100</div>
-          </div>
-        </div>
-      `;
-    }
 
-    function renderAll(){
-      const q = (document.getElementById("search")?.value || "").toLowerCase();
-      const filtered = transactions.filter(tx => {
-        const matchText = `${tx.merchant} ${tx.city} ${tx.category}`.toLowerCase().includes(q);
-        if (!matchText) return false;
-        if (activeFilter === "all") return true;
-        if (activeFilter === "flagged") return tx.status === "pending" || tx.score.level !== "low";
-        if (activeFilter === "approved") return tx.status === "approved";
-        if (activeFilter === "blocked") return tx.status === "blocked";
-        return true;
-      });
-
-      const all = document.getElementById("allList");
-      const recent = document.getElementById("recentList");
-
-      all.innerHTML = filtered.length
-        ? filtered.map(renderTxn).join("")
-        : `<div class="card center">No transactions found.</div>`;
-
-      recent.innerHTML = transactions.slice(0,5).map(renderTxn).join("");
-    }
-
-    function updateUI(){
-      const total = transactions.length;
-      const pending = transactions.filter(t => t.status === "pending").length;
-      const blocked = transactions.filter(t => t.status === "blocked").length;
-      const saved = transactions.filter(t => t.status === "blocked").reduce((a,t)=>a+t.amount,0);
-      document.getElementById("mTotal").textContent = total;
-      document.getElementById("mPending").textContent = pending;
-      document.getElementById("mBlocked").textContent = blocked;
-      document.getElementById("mSaved").textContent = money(saved);
-
-      const averageRisk = total ? Math.round(transactions.reduce((a,t)=>a+t.score.total,0)/total) : 0;
-      const status = pending > 0 ? { txt:`🔴 ${pending} Alert${pending>1?'s':''} pending`, cls:"bad" } :
-                     averageRisk >= 40 ? { txt:"🟡 Monitoring", cls:"warn" } :
-                     { txt:"🟢 All clear", cls:"good" };
-      document.getElementById("liveClock").textContent = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
-      document.getElementById("balanceText").textContent = money(12847.50 - blocked * 0.0); // just visual
-      renderAll();
-      if (pending === 0 && !transactions.some(t => t.status === "pending")) {
-        hideBannerIfNone();
-      }
-    }
-
-    function showBanner(tx){
-      const banner = document.getElementById("alertBanner");
-      document.getElementById("alertTitle").textContent = `Suspicious activity detected`;
-      document.getElementById("alertDesc").textContent = `${tx.merchant} • ${money(tx.amount)} • Risk ${tx.score.total}/100`;
-      banner.classList.add("show");
-    }
-
-    function hideBannerIfNone(){
-      const pending = transactions.find(t => t.status === "pending");
-      if (!pending) document.getElementById("alertBanner").classList.remove("show");
-    }
-
-    function fillScreens(tx){
-      if (!tx) return;
-      currentTxn = tx;
-
-      // alert
-      document.getElementById("alertMerchant").textContent = `${tx.emoji} ${tx.merchant}`;
-      document.getElementById("alertLocation").textContent = `${tx.city} • ${tx.category}`;
-      document.getElementById("alertAmount").textContent = money(tx.amount);
-      document.getElementById("alertTime").textContent = `Detected ${fmtTime(tx.createdAt)} • ${fmtRelative(tx.createdAt)}`;
-      document.getElementById("alertScore").textContent = `${tx.score.total}/100`;
-      document.getElementById("alertLevel").textContent = tx.riskLabel;
-      document.getElementById("alertBar").style.width = `${tx.score.total}%`;
-      document.getElementById("alertBar").className = `fill ${tx.riskColor}`;
-      document.getElementById("alertScore").className = `risk-score ${tx.riskColor}`;
-      const reasons = tx.score.reasons.length ? tx.score.reasons : [{ title:"Pattern anomaly", detail:"This transaction differs from your usual behavior." }];
-      document.getElementById("alertReasons").innerHTML = reasons.map(r => `
-        <div class="reason">
-          <div class="bullet">•</div>
-          <div>
-            <div class="t">${r.title}</div>
-            <div class="d">${r.detail}</div>
-          </div>
-        </div>
-      `).join("");
-
-      // analysis
-      document.getElementById("anMerchant").textContent = `${tx.emoji} ${tx.merchant}`;
-      document.getElementById("anLocation").textContent = `${tx.city} • ${tx.category}`;
-      document.getElementById("anAmount").textContent = money(tx.amount);
-      document.getElementById("anTime").textContent = `${fmtTime(tx.createdAt)} • ${fmtRelative(tx.createdAt)}`;
-      document.getElementById("anScore").textContent = `${tx.score.total}/100`;
-      document.getElementById("anLevel").textContent = `${tx.riskLabel} risk`;
-      document.getElementById("anScore").className = `risk-score ${tx.riskColor}`;
-      document.getElementById("anBar").className = `fill ${tx.riskColor}`;
-      document.getElementById("anBar").style.width = `${tx.score.total}%`;
-      document.getElementById("formulaText").textContent =
-        `Risk = Amount(${tx.score.breakdown.amountScore.toFixed(0)}) + Location(${tx.score.breakdown.locationScore.toFixed(0)}) + Merchant(${tx.score.breakdown.merchantScore.toFixed(0)}) + Time(${tx.score.breakdown.timeScore.toFixed(0)}) + Velocity(${tx.score.breakdown.velocityScore.toFixed(0)}) + Channel(${tx.score.breakdown.channelScore.toFixed(0)})`;
-      document.getElementById("cmpAvg").textContent = money(user.avg);
-      document.getElementById("cmpTxn").textContent = money(tx.amount);
-      document.getElementById("cmpDist").textContent = `${Math.round(tx.distance)} mi`;
-      document.getElementById("cmpVel").textContent = tx.score.recentCount;
-
-      const factors = [
-        { name:"Amount factor", value: tx.score.breakdown.amountScore, detail:`${money(tx.amount)} compared with your ${money(user.avg)} average.` },
-        { name:"Location factor", value: tx.score.breakdown.locationScore, detail:`Transaction is approximately ${Math.round(tx.distance)} miles from home.` },
-        { name:"Merchant factor", value: tx.score.breakdown.merchantScore, detail: tx.suspiciousMerchant ? "This merchant category is high-risk in the simulator." : "Merchant is in a normal category for this profile." },
-        { name:"Time factor", value: tx.score.breakdown.timeScore, detail:`Transaction time: ${tx.hour.toString().padStart(2,"0")}:${String(tx.minute).padStart(2,"0")}.` },
-        { name:"Velocity factor", value: tx.score.breakdown.velocityScore, detail:`There are ${tx.score.recentCount} transactions in the last 30 minutes.` },
-        { name:"Channel factor", value: tx.score.breakdown.channelScore, detail:`${tx.channel} payment method used.` }
-      ];
-      document.getElementById("factorGrid").innerHTML = factors.map(f => {
-        const cls = f.value >= 18 ? "bad" : f.value >= 8 ? "warn" : "good";
-        return `
-          <div class="factor">
-            <div class="row">
-              <div class="name">${f.name}</div>
-              <div class="val ${cls}">${Math.round(f.value)}</div>
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="approveTransaction()">
+                    <i class="fas fa-check-circle"></i> Approve
+                </button>
+                <button class="btn btn-danger" onclick="showScreen('screen-block-confirm')">
+                    <i class="fas fa-ban"></i> Block
+                </button>
             </div>
-            <div class="bar"><div class="fill ${cls}" style="width:${clamp(f.value / (f.name === 'Merchant factor' ? 20 : f.name === 'Amount factor' ? 30 : f.name === 'Location factor' ? 25 : f.name === 'Time factor' ? 10 : f.name === 'Velocity factor' ? 10 : 5) * 100, 0, 100)}%"></div></div>
-            <div class="sub">${f.detail}</div>
-          </div>
-        `;
-      }).join("");
+        </div>
 
-      // confirm
-      document.getElementById("confirmMerchant").textContent = `${tx.emoji} ${tx.merchant}`;
-      document.getElementById("confirmLocation").textContent = `${tx.city} • ${tx.category}`;
-      document.getElementById("confirmAmount").textContent = money(tx.amount);
-    }
+        <!-- ==================== SCREEN 5: BLOCK CONFIRMATION ==================== -->
+        <div class="screen" id="screen-block-confirm">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-fraud-alert')"></i>
+                <h2>Block Transaction</h2>
+            </div>
 
-    function openTxn(id){
-      const tx = transactions.find(t => t.id === id);
-      if (!tx) return;
-      currentTxn = tx;
-      fillScreens(tx);
-      if (tx.status === "pending" || tx.score.total >= 70){
-        showScreen("screen-alert");
-      } else {
-        showScreen("screen-analysis");
-      }
-    }
+            <div class="success-screen" style="padding: 40px 20px;">
+                <div class="success-icon red">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2>Confirm Block</h2>
+                <p>You're about to block this transaction</p>
+            </div>
 
-    function openCurrentAlert(){
-      const tx = transactions.find(t => t.status === "pending") || currentTxn;
-      if (!tx) return showToast("No alert available");
-      currentTxn = tx;
-      fillScreens(tx);
-      showScreen("screen-alert");
-    }
+            <div class="confirm-details">
+                <h4 id="confirmMerchant">Merchant Name</h4>
+                <p>Card ending in •••• 4829</p>
+                <div class="amount" id="confirmAmount">$0.00</div>
+            </div>
 
-    function showAnalysisForCurrent(){
-      if (!currentTxn) currentTxn = transactions[0];
-      fillScreens(currentTxn);
-      showScreen("screen-analysis");
-    }
+            <div class="what-happens">
+                <h4>What happens next:</h4>
+                <div class="what-happens-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Transaction blocked immediately</span>
+                </div>
+                <div class="what-happens-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Merchant notified</span>
+                </div>
+                <div class="what-happens-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Card temporarily frozen</span>
+                </div>
+            </div>
 
-    function goBlockConfirm(){
-      if (!currentTxn) return;
-      fillScreens(currentTxn);
-      showScreen("screen-confirm");
-    }
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="reportFraud" checked>
+                    <label for="reportFraud">Report as fraud</label>
+                </div>
+            </div>
 
-    function approveCurrent(){
-      if (!currentTxn) return;
-      currentTxn.status = "approved";
-      updateUI();
-      hideBannerIfNone();
-      showToast(`Approved: ${currentTxn.merchant}`, "✅");
-      showScreen("screen-approve-success");
-      document.getElementById("approveText").textContent = `${currentTxn.merchant} was approved and marked safe.`;
-    }
+            <div class="action-buttons">
+                <button class="btn btn-danger" onclick="blockTransaction()">
+                    <i class="fas fa-ban"></i> Confirm Block
+                </button>
+                <button class="btn btn-secondary" onclick="showScreen('screen-fraud-alert')">
+                    Cancel
+                </button>
+            </div>
+        </div>
 
-    function blockCurrent(){
-      if (!currentTxn) return;
-      currentTxn.status = "blocked";
-      updateUI();
-      hideBannerIfNone();
-      showToast(`Blocked: ${currentTxn.merchant}`, "🚫");
-      showScreen("screen-block-success");
-      document.getElementById("blockText").textContent = `${currentTxn.merchant} was blocked and reported for review.`;
-    }
+        <!-- ==================== SCREEN 6: FORMULA EXPLANATION ==================== -->
+        <div class="screen" id="screen-formula">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
+                <h2>Detection Algorithm</h2>
+            </div>
 
-    function reportFraud(){
-      if (currentTxn && currentTxn.status === "pending") {
-        showToast(`Fraud report submitted for ${currentTxn.merchant}`, "🚨");
-      } else {
-        showToast("Support ticket opened", "💬");
-      }
-      showScreen("screen-support");
-    }
+            <div class="content">
+                <div class="section-title">
+                    <span style="color: var(--text-dark);">How It Works</span>
+                </div>
 
-    function chatReply(action){
-      showScreen("screen-support");
-      const msgs = document.getElementById("chatMsgs");
-      const text = action === "Start live chat" ? "I want to start live chat." :
-                   action === "Call support" ? "I’d like to call support." :
-                   action === "Fraud question" ? "What makes a transaction suspicious?" : action;
-      msgs.insertAdjacentHTML("beforeend", `<div class="msg user">${text}</div>`);
-      setTimeout(() => {
-        msgs.insertAdjacentHTML("beforeend",
-          `<div class="msg bot">Thanks — our team can help with that. You can review alerts, block suspicious charges, or report fraud from this screen.</div>`
-        );
-        msgs.scrollTop = msgs.scrollHeight;
-      }, 500);
-      msgs.scrollTop = msgs.scrollHeight;
-    }
+                <div class="formula-box" style="margin-bottom: 20px;">
+                    <h4><i class="fas fa-brain"></i> MASTER FORMULA</h4>
+                    <div class="formula">
+                        <span class="highlight">Risk Score</span> = <br><br>
+                        (<span class="value">Amount Risk</span> × 0.25) + <br>
+                        (<span class="value">Location Risk</span> × 0.25) + <br>
+                        (<span class="value">Time Risk</span> × 0.15) + <br>
+                        (<span class="value">Merchant Risk</span> × 0.20) + <br>
+                        (<span class="value">Velocity Risk</span> × 0.15)
+                    </div>
+                </div>
 
-    function sendChat(){
-      const input = document.getElementById("chatInput");
-      const v = input.value.trim();
-      if (!v) return;
-      const msgs = document.getElementById("chatMsgs");
-      msgs.insertAdjacentHTML("beforeend", `<div class="msg user">${escapeHtml(v)}</div>`);
-      input.value = "";
-      setTimeout(() => {
-        msgs.insertAdjacentHTML("beforeend", `<div class="msg bot">Got it. A support agent would respond here in a real app. For this prototype, you can use Report Fraud or Block buttons to continue.</div>`);
-        msgs.scrollTop = msgs.scrollHeight;
-      }, 700);
-      msgs.scrollTop = msgs.scrollHeight;
-    }
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-dollar-sign"></i> Amount Risk (25%)</span>
+                    </div>
+                    <p>Compares transaction to your average spending. Higher amounts = higher risk.</p>
+                    <div class="formula-box" style="margin-top: 10px; padding: 12px;">
+                        <div class="formula" style="font-size: 0.8rem;">
+                            min(100, (amount / avgSpend) × 20)
+                        </div>
+                    </div>
+                </div>
 
-    function escapeHtml(str){
-      return str.replace(/[&<>"']/g, m => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
-      }[m]));
-    }
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-map-marker-alt"></i> Location Risk (25%)</span>
+                    </div>
+                    <p>Measures distance from your home location. Farther = higher risk.</p>
+                    <div class="formula-box" style="margin-top: 10px; padding: 12px;">
+                        <div class="formula" style="font-size: 0.8rem;">
+                            min(100, distance / 20)
+                        </div>
+                    </div>
+                </div>
 
-    function showScreen(id){
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-clock"></i> Time Risk (15%)</span>
+                    </div>
+                    <p>Transactions between 12 AM - 5 AM are flagged as unusual.</p>
+                    <div class="formula-box" style="margin-top: 10px; padding: 12px;">
+                        <div class="formula" style="font-size: 0.8rem;">
+                            (hour >= 0 && hour <= 5) ? 80 : 10
+                        </div>
+                    </div>
+                </div>
 
-      document.querySelectorAll(".navitem").forEach(n => n.classList.remove("active"));
-      document.querySelectorAll(`.navitem[data-nav="${id}"]`).forEach(n => n.classList.add("active"));
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-store"></i> Merchant Risk (20%)</span>
+                    </div>
+                    <p>Certain categories (gambling, crypto, etc.) have higher base risk.</p>
+                    <div class="formula-box" style="margin-top: 10px; padding: 12px;">
+                        <div class="formula" style="font-size: 0.8rem;">
+                            categoryRiskScores[merchant.category]
+                        </div>
+                    </div>
+                </div>
 
-      if (id === "screen-transactions") renderAll();
-      if (id === "screen-home") updateUI();
-    }
+                <div class="risk-item">
+                    <div class="risk-item-header">
+                        <span class="label"><i class="fas fa-tachometer-alt"></i> Velocity Risk (15%)</span>
+                    </div>
+                    <p>Multiple transactions in short time period increases risk.</p>
+                    <div class="formula-box" style="margin-top: 10px; padding: 12px;">
+                        <div class="formula" style="font-size: 0.8rem;">
+                            min(100, recentTxnCount × 15)
+                        </div>
+                    </div>
+                </div>
 
-    function setFilter(v){
-      activeFilter = v;
-      document.querySelectorAll(".filter").forEach(b => b.classList.remove("active"));
-      document.querySelector(`.filter[data-filter="${v}"]`)?.classList.add("active");
-      renderAll();
-    }
+                <div class="security-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <h4>Threshold Settings</h4>
+                    <p>🟢 0-39: Low Risk | 🟡 40-69: Medium | 🔴 70-100: High</p>
+                </div>
+            </div>
 
-    function simulateNow(){
-      const forceFraud = Math.random() < 0.38;
-      const tx = generateTransaction(forceFraud);
-      currentTxn = tx;
-      fillScreens(tx);
-      if (tx.status === "pending"){
-        showBanner(tx);
-        showToast(`Live alert: ${tx.merchant} was flagged`, "⚠️");
-      } else {
-        showToast(`New transaction: ${tx.merchant}`, "💳");
-      }
-      renderAll();
-      updateUI();
-    }
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-transactions')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item active" onclick="showScreen('screen-formula')">
+                    <i class="fas fa-flask"></i>
+                    <span>Formula</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-support')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
 
-    function toggleAuto(){
-      autoOn = !autoOn;
-      document.getElementById("autoSwitch").classList.toggle("on", autoOn);
-      showToast(autoOn ? "Auto simulator started" : "Auto simulator paused", autoOn ? "▶️" : "⏸️");
-      if (timer) clearInterval(timer);
-      if (autoOn) timer = setInterval(simulateNow, 4500);
-    }
+        <!-- ==================== SCREEN 7: SUPPORT ==================== -->
+        <div class="screen" id="screen-support">
+            <div class="header-back">
+                <i class="fas fa-arrow-left" onclick="showScreen('screen-home')"></i>
+                <h2>Help & Settings</h2>
+            </div>
 
-    function showToast(text, icon="🔔"){
-      const toast = document.getElementById("toast");
-      document.getElementById("toastText").textContent = text;
-      toast.firstChild.textContent = icon + " ";
-      toast.classList.add("show");
-      clearTimeout(window.__toastT);
-      window.__toastT = setTimeout(() => toast.classList.remove("show"), 2300);
-    }
+            <div class="content">
+                <div class="section-title">
+                    <span style="color: var(--text-dark);">Quick Actions</span>
+                </div>
 
-    function init(){
-      seedData();
-      updateUI();
-      fillScreens(currentTxn);
+                <div class="support-card" onclick="showToast('Generating 5 transactions...'); generateMultiple(5);">
+                    <div class="support-icon chat">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Generate 5 Transactions</h4>
+                        <p>Quick demo mode</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
+                </div>
 
-      // make sure tabs are synced
-      setInterval(() => {
-        document.getElementById("liveClock").textContent = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
-      }, 1000);
+                <div class="support-card" onclick="showToast('Generating fraud transaction...'); generateFraud();">
+                    <div class="support-icon report">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Simulate Fraud</h4>
+                        <p>Force a suspicious transaction</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
+                </div>
 
-      timer = setInterval(() => {
-        if (autoOn) simulateNow();
-      }, 4500);
-    }
+                <div class="support-card" onclick="resetApp()">
+                    <div class="support-icon call">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Reset Demo</h4>
+                        <p>Clear all transactions</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-gray);"></i>
+                </div>
 
-    window.addEventListener("DOMContentLoaded", init);
-  </script>
+                <div class="section-title" style="margin-top: 30px;">
+                    <span style="color: var(--text-dark);">About</span>
+                </div>
+
+                <div class="faq-item" onclick="showScreen('screen-formula')">
+                    <i class="fas fa-flask"></i> How does the detection formula work?
+                </div>
+                <div class="faq-item" onclick="showToast('Weighted scoring based on 5 risk factors')">
+                    <i class="fas fa-question-circle"></i> What factors determine risk?
+                </div>
+                <div class="faq-item" onclick="showToast('Score ≥ 70 = High Risk Alert')">
+                    <i class="fas fa-bell"></i> When do I get alerts?
+                </div>
+
+                <div class="security-badge">
+                    <i class="fas fa-code"></i>
+                    <h4>SafePay Demo v1.0</h4>
+                    <p>Real-time fraud detection simulator</p>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-home')">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-transactions')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-formula')">
+                    <i class="fas fa-flask"></i>
+                    <span>Formula</span>
+                </div>
+                <div class="nav-item active" onclick="showScreen('screen-support')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SCREEN 8: SUCCESS APPROVED ==================== -->
+        <div class="screen" id="screen-success-approve">
+            <div class="success-screen">
+                <div class="success-icon green">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2>Transaction Approved</h2>
+                <p>Marked as legitimate. Our system will learn from this pattern.</p>
+                <button class="btn btn-primary" onclick="showScreen('screen-home')" style="width: 100%; max-width: 280px;">
+                    <i class="fas fa-home"></i> Back to Home
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== SCREEN 9: SUCCESS BLOCKED ==================== -->
+        <div class="screen" id="screen-success-block">
+            <div class="success-screen">
+                <div class="success-icon red">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <h2>Transaction Blocked</h2>
+                <p>Fraud reported. Card frozen for security. Money protected!</p>
+                <button class="btn btn-primary" onclick="showScreen('screen-home')" style="width: 100%; max-width: 280px; margin-bottom: 12px;">
+                    <i class="fas fa-home"></i> Back to Home
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast">
+            <i class="fas fa-info-circle"></i>
+            <span id="toastMessage">Message</span>
+        </div>
+
+        <!-- Processing Overlay -->
+        <div class="processing" id="processing">
+            <div class="spinner"></div>
+            <p>Analyzing transaction...</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // DATA SIMULATOR & FRAUD DETECTION ENGINE
+        // ============================================
+
+        // User profile (baseline for comparison)
+        const userProfile = {
+            avgSpending: 48.50,
+            homeLocation: { lat: 40.7128, lon: -74.0060, city: "New York, NY" },
+            typicalHours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+            typicalCategories: ["shopping", "food", "gas", "entertainment", "grocery"]
+        };
+
+        // Merchant database
+        const merchants = {
+            safe: [
+                { name: "Amazon", category: "shopping", icon: "fab fa-amazon", riskBase: 5 },
+                { name: "Starbucks", category: "food", icon: "fas fa-coffee", riskBase: 5 },
+                { name: "Walmart", category: "grocery", icon: "fas fa-shopping-cart", riskBase: 5 },
+                { name: "Netflix", category: "entertainment", icon: "fab fa-netflix", riskBase: 5 },
+                { name: "Spotify", category: "entertainment", icon: "fab fa-spotify", riskBase: 5 },
+                { name: "Shell Gas", category: "gas", icon: "fas fa-gas-pump", riskBase: 10 },
+                { name: "Target", category: "shopping", icon: "fas fa-bullseye", riskBase: 5 },
+                { name: "Uber", category: "transport", icon: "fab fa-uber", riskBase: 10 },
+                { name: "Apple Store", category: "shopping", icon: "fab fa-apple", riskBase: 10 },
+                { name: "McDonald's", category: "food", icon: "fas fa-hamburger", riskBase: 5 }
+            ],
+            risky: [
+                { name: "Vegas Casino Online", category: "gambling", icon: "fas fa-dice", riskBase: 85 },
+                { name: "CryptoExchange XYZ", category: "crypto", icon: "fab fa-bitcoin", riskBase: 75 },
+                { name: "Foreign Wire Transfer", category: "transfer", icon: "fas fa-exchange-alt", riskBase: 80 },
+                { name: "Unknown ATM", category: "atm", icon: "fas fa-money-bill", riskBase: 70 },
+                { name: "BetOnline Sports", category: "gambling", icon: "fas fa-futbol", riskBase: 80 },
+                { name: "Luxury Jewelers Intl", category: "luxury", icon: "fas fa-gem", riskBase: 60 },
+                { name: "Adult Services LLC", category: "adult", icon: "fas fa-ban", riskBase: 90 },
+                { name: "Anonymous VPN Pay", category: "suspicious", icon: "fas fa-user-secret", riskBase: 85 }
+            ]
+        };
+
+        // Locations
+        const locations = {
+            safe: [
+                { city: "New York, NY", distance: 0 },
+                { city: "Brooklyn, NY", distance: 12 },
+                { city: "Jersey City, NJ", distance: 8 },
+                { city: "Newark, NJ", distance: 15 },
+                { city: "Manhattan, NY", distance: 3 }
+            ],
+            risky: [
+                { city: "Las Vegas, NV", distance: 2500 },
+                { city: "Miami, FL", distance: 1280 },
+                { city: "Moscow, Russia", distance: 4680 },
+                { city: "Lagos, Nigeria", distance: 5120 },
+                { city: "Bangkok, Thailand", distance: 8650 },
+                { city: "Dubai, UAE", distance: 6850 }
+            ]
+        };
+
+        // App state
+        let transactions = [];
+        let currentAlert = null;
+        let balance = 12847.50;
+        let blockedAmount = 0;
+        let currentFilter = 'all';
+
+        // ============================================
+        // FRAUD DETECTION FORMULA
+        // ============================================
+
+        function calculateRiskScore(transaction) {
+            const weights = {
+                amount: 0.25,
+                location: 0.25,
+                time: 0.15,
+                merchant: 0.20,
+                velocity: 0.15
+            };
+
+            // 1. Amount Risk (25%)
+            const amountRatio = transaction.amount / userProfile.avgSpending;
+            const amountRisk = Math.min(100, amountRatio * 20);
+
+            // 2. Location Risk (25%)
+            const locationRisk = Math.min(100, transaction.distance / 20);
+
+            // 3. Time Risk (15%)
+            const hour = transaction.hour;
+            const timeRisk = (hour >= 0 && hour <= 5) ? 80 : 
+                            (hour >= 23 || hour <= 6) ? 50 : 10;
+
+            // 4. Merchant Risk (20%)
+            const merchantRisk = transaction.merchantRiskBase;
+
+            // 5. Velocity Risk (15%) - transactions in last 5 minutes
+            const recentTxns = transactions.filter(t => {
+                const diff = Date.now() - new Date(t.timestamp).getTime();
+                return diff < 300000; // 5 minutes
+            }).length;
+            const velocityRisk = Math.min(100, recentTxns * 15);
+
+            // Calculate weighted total
+            const totalRisk = 
+                (amountRisk * weights.amount) +
+                (locationRisk * weights.location) +
+                (timeRisk * weights.time) +
+                (merchantRisk * weights.merchant) +
+                (velocityRisk * weights.velocity);
+
+            return {
+                total: Math.round(Math.min(100, totalRisk)),
+                breakdown: {
+                    amount: { score: Math.round(amountRisk), weight: weights.amount, weighted: Math.round(amountRisk * weights.amount) },
+                    location: { score: Math.round(locationRisk), weight: weights.location, weighted: Math.round(locationRisk * weights.location) },
+                    time: { score: Math.round(timeRisk), weight: weights.time, weighted: Math.round(timeRisk * weights.time) },
+                    merchant: { score: Math.round(merchantRisk), weight: weights.merchant, weighted: Math.round(merchantRisk * weights.merchant) },
+                    velocity: { score: Math.round(velocityRisk), weight: weights.velocity, weighted: Math.round(velocityRisk * weights.velocity) }
+                },
+                factors: []
+            };
+        }
+
+        function generateRiskFactors(transaction, riskData) {
+            const factors = [];
+
+            // Amount factor
+            if (riskData.breakdown.amount.score > 50) {
+                const ratio = (transaction.amount / userProfile.avgSpending).toFixed(1);
+                factors.push({
+                    icon: "fas fa-dollar-sign",
+                    title: "High Amount",
+                    detail: `$${transaction.amount.toFixed(2)} is ${ratio}x your average`,
+                    score: riskData.breakdown.amount.weighted
+                });
+            }
+
+            // Location factor
+            if (riskData.breakdown.location.score > 30) {
+                factors.push({
+                    icon: "fas fa-map-marker-alt",
+                    title: "Unusual Location",
+                    detail: `${transaction.distance} miles from home`,
+                    score: riskData.breakdown.location.weighted
+                });
+            }
+
+            // Time factor
+            if (riskData.breakdown.time.score > 30) {
+                factors.push({
+                    icon: "fas fa-clock",
+                    title: "Unusual Time",
+                    detail: `Transaction at ${transaction.hour}:00 is outside normal hours`,
+                    score: riskData.breakdown.time.weighted
+                });
+            }
+
+            // Merchant factor
+            if (riskData.breakdown.merchant.score > 40) {
+                factors.push({
+                    icon: "fas fa-store",
+                    title: "High-Risk Merchant",
+                    detail: `${transaction.category} category has elevated risk`,
+                    score: riskData.breakdown.merchant.weighted
+                });
+            }
+
+            // Velocity factor
+            if (riskData.breakdown.velocity.score > 20) {
+                const recent = transactions.filter(t => Date.now() - new Date(t.timestamp).getTime() < 300000).length;
+                factors.push({
+                    icon: "fas fa-tachometer-alt",
+                    title: "Rapid Transactions",
+                    detail: `${recent} transactions in last 5 minutes`,
+                    score: riskData.breakdown.velocity.weighted
+                });
+            }
+
+            return factors;
+        }
+
+        // ============================================
+        // TRANSACTION GENERATOR
+        // ============================================
+
+        function generateTransaction(forceFraud = false) {
+            showProcessing(true);
+
+            setTimeout(() => {
+                // Decide if fraudulent
+                const isFraud = forceFraud || Math.random() < 0.25;
+
+                // Select merchant
+                const merchantPool = isFraud ? merchants.risky : merchants.safe;
+                const merchant = merchantPool[Math.floor(Math.random() * merchantPool.length)];
+
+                // Select location
+                const locationPool = isFraud ? locations.risky : locations.safe;
+                const location = locationPool[Math.floor(Math.random() * locationPool.length)];
+
+                // Generate amount
+                let amount;
+                if (isFraud) {
+                    const amountType = Math.random();
+                    if (amountType < 0.4) {
+                        amount = Math.random() * 3000 + 500; // High amount
+                    } else if (amountType < 0.7) {
+                        amount = [500, 1000, 1500, 2000, 2500][Math.floor(Math.random() * 5)]; // Round number
+                    } else {
+                        amount = Math.random() * 50 + 450; // Just under limit
+                    }
+                } else {
+                    amount = Math.random() * 150 + 5;
+                }
+                amount = Math.round(amount * 100) / 100;
+
+                // Generate time
+                const now = new Date();
+                let hour;
+                if (isFraud && Math.random() < 0.4) {
+                    hour = Math.floor(Math.random() * 6); // 0-5 AM
+                } else {
+                    hour = userProfile.typicalHours[Math.floor(Math.random() * userProfile.typicalHours.length)];
+                }
+
+                // Create transaction object
+                const transaction = {
+                    id: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    merchant: merchant.name,
+                    category: merchant.category,
+                    icon: merchant.icon,
+                    amount: amount,
+                    location: location.city,
+                    distance: location.distance,
+                    hour: hour,
+                    timestamp: now.toISOString(),
+                    merchantRiskBase: merchant.riskBase,
+                    status: 'pending'
+                };
+
+                // Calculate risk
+                const riskData = calculateRiskScore(transaction);
+                transaction.riskScore = riskData.total;
+                transaction.riskBreakdown = riskData.breakdown;
+                transaction.riskFactors = generateRiskFactors(transaction, riskData);
+
+                // Determine risk level
+                if (transaction.riskScore >= 70) {
+                    transaction.riskLevel = 'HIGH';
+                    transaction.riskColor = 'danger';
+                } else if (transaction.riskScore >= 40) {
+                    transaction.riskLevel = 'MEDIUM';
+                    transaction.riskColor = 'warning';
+                } else {
+                    transaction.riskLevel = 'LOW';
+                    transaction.riskColor = 'success';
+                    transaction.status = 'verified';
+                }
+
+                // Add to transactions
+                transactions.unshift(transaction);
+
+                // Update balance
+                if (transaction.status !== 'blocked') {
+                    balance -= amount;
+                }
+
+                // Handle alert
+                if (transaction.riskScore >= 40) {
+                    currentAlert = transaction;
+                    updateAlertBanner();
+                }
+
+                showProcessing(false);
+                updateUI();
+
+                // Show toast
+                if (transaction.riskScore >= 70) {
+                    showToast(`🔴 HIGH RISK: ${merchant.name} - $${amount.toFixed(2)}`, 'exclamation-triangle');
+                } else if (transaction.riskScore >= 40) {
+                    showToast(`🟡 MEDIUM RISK: ${merchant.name}`, 'exclamation-circle');
+                } else {
+                    showToast(`🟢 Verified: ${merchant.name} - $${amount.toFixed(2)}`, 'check-circle');
+                }
+
+            }, 800);
+        }
+
+        function generateFraud() {
+            generateTransaction(true);
+        }
+
+        function generateMultiple(count) {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= count) {
+                    clearInterval(interval);
+                    return;
+                }
+                generateTransaction(i === count - 1); // Last one might be fraud
+                i++;
+            }, 1000);
+        }
+
+        // ============================================
+        // UI UPDATES
+        // ============================================
+
+        function updateUI() {
+            updateStats();
+            renderTransactions();
+            updateAlertBanner();
+        }
+
+        function updateStats() {
+            document.getElementById('balanceAmount').textContent = `$${balance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+            document.getElementById('statTotal').textContent = transactions.length;
+            document.getElementById('statBlocked').textContent = transactions.filter(t => t.status === 'blocked').length;
+            document.getElementById('statProtected').textContent = `$${blockedAmount.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+
+            const avgRisk = transactions.length > 0 
+                ? Math.round(transactions.reduce((sum, t) => sum + t.riskScore, 0) / transactions.length)
+                : 0;
+            const riskEl = document.getElementById('statRisk');
+            riskEl.textContent = `${avgRisk}%`;
+            riskEl.className = 'value ' + (avgRisk >= 70 ? 'danger' : avgRisk >= 40 ? 'warning' : 'success');
+        }
+
+        function renderTransactions() {
+            const recentContainer = document.getElementById('recentTransactions');
+            const allContainer = document.getElementById('allTransactions');
+
+            // Filter transactions
+            let filtered = transactions;
+            if (currentFilter === 'flagged') {
+                filtered = transactions.filter(t => t.riskScore >= 40 && t.status === 'pending');
+            } else if (currentFilter === 'approved') {
+                filtered = transactions.filter(t => t.status === 'verified' || t.status === 'approved');
+            } else if (currentFilter === 'blocked') {
+                filtered = transactions.filter(t => t.status === 'blocked');
+            }
+
+            // Render recent (last 5)
+            if (transactions.length === 0) {
+                recentContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-credit-card"></i>
+                        <p>Click + to simulate transactions</p>
+                    </div>`;
+            } else {
+                recentContainer.innerHTML = transactions.slice(0, 5).map(t => createTransactionCard(t)).join('');
+            }
+
+            // Render all
+            if (filtered.length === 0) {
+                allContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-filter"></i>
+                        <p>No transactions match filter</p>
+                    </div>`;
+            } else {
+                allContainer.innerHTML = filtered.map(t => createTransactionCard(t)).join('');
+            }
+        }
+
+        function createTransactionCard(t) {
+            const statusText = t.status === 'blocked' ? '🚫 Blocked' :
+                              t.status === 'approved' ? '✓ Approved' :
+                              t.status === 'verified' ? '✓ Verified' :
+                              t.riskLevel === 'HIGH' ? '⚠️ HIGH RISK' :
+                              t.riskLevel === 'MEDIUM' ? '⚠️ Review' : '✓ Safe';
+
+            const time = formatTime(t.timestamp);
+
+            return `
+                <div class="transaction-card ${t.riskColor}" onclick="viewTransaction('${t.id}')">
+                    <div class="transaction-icon ${t.riskColor}">
+                        <i class="${t.icon}"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-name">${t.merchant}</div>
+                        <div class="transaction-meta">${time} • ${t.location}</div>
+                    </div>
+                    <div class="transaction-amount">
+                        <div class="amount">-$${t.amount.toFixed(2)}</div>
+                        <div class="status ${t.riskColor}">${statusText}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateAlertBanner() {
+            const banner = document.getElementById('alertBanner');
+            const badge = document.getElementById('alertBadge');
+            const pendingAlerts = transactions.filter(t => t.riskScore >= 40 && t.status === 'pending');
+
+            if (pendingAlerts.length > 0) {
+                banner.style.display = 'block';
+                banner.className = pendingAlerts[0].riskScore >= 70 ? 'alert-banner' : 'alert-banner warning';
+                document.getElementById('alertCount').textContent = `${pendingAlerts.length} Alert${pendingAlerts.length > 1 ? 's' : ''} Pending`;
+                document.getElementById('alertMessage').textContent = `$${pendingAlerts[0].amount.toFixed(2)} at ${pendingAlerts[0].merchant}`;
+
+                badge.classList.add('has-alerts');
+                badge.setAttribute('data-count', pendingAlerts.length);
+
+                currentAlert = pendingAlerts[0];
+            } else {
+                banner.style.display = 'none';
+                badge.classList.remove('has-alerts');
+                currentAlert = null;
+            }
+        }
+
+        // ============================================
+        // TRANSACTION ACTIONS
+        // ============================================
+
+        function viewTransaction(id) {
+            const txn = transactions.find(t => t.id === id);
+            if (!txn) return;
+
+            if (txn.riskScore >= 40 && txn.status === 'pending') {
+                currentAlert = txn;
+                showFraudAlert();
+            } else {
+                showToast(`${txn.merchant}: Risk Score ${txn.riskScore}/100`);
+            }
+        }
+
+        function showCurrentAlert() {
+            if (currentAlert) {
+                showFraudAlert();
+            }
+        }
+
+        function showFraudAlert() {
+            if (!currentAlert) return;
+
+            const t = currentAlert;
+
+            // Update header
+            const header = document.getElementById('fraudHeader');
+            header.className = t.riskScore >= 70 ? 'fraud-header' : 'fraud-header warning';
+            document.getElementById('fraudTitle').textContent = 
+                t.riskScore >= 70 ? 'Suspicious Activity Detected' : 'Unusual Activity Detected';
+
+            // Update details
+            document.getElementById('fraudMerchant').textContent = t.merchant;
+            document.getElementById('fraudLocation').textContent = t.location;
+            document.getElementById('fraudAmount').textContent = `$${t.amount.toFixed(2)}`;
+            document.getElementById('fraudTime').innerHTML = `<i class="fas fa-clock"></i> ${formatTime(t.timestamp)}`;
+
+            // Update risk score
+            const scoreEl = document.getElementById('fraudScore');
+            scoreEl.textContent = `${t.riskScore}/100`;
+            scoreEl.className = `score ${t.riskColor}`;
+            
+            const barEl = document.getElementById('fraudScoreBar');
+            barEl.style.width = `${t.riskScore}%`;
+            barEl.className = `risk-bar-fill ${t.riskColor}`;
+
+            // Update formula display
+            const b = t.riskBreakdown;
+            document.getElementById('formulaDisplay').innerHTML = `
+                <span class="highlight">Risk</span> = 
+                (<span class="value">${b.amount.score}</span>×0.25) + 
+                (<span class="value">${b.location.score}</span>×0.25) + 
+                (<span class="value">${b.time.score}</span>×0.15) + 
+                (<span class="value">${b.merchant.score}</span>×0.20) + 
+                (<span class="value">${b.velocity.score}</span>×0.15)
+                <br><br>= <span class="highlight">${t.riskScore}</span>
+            `;
+
+            // Update why flagged
+            const whyFlagged = document.getElementById('whyFlagged');
+            whyFlagged.className = t.riskScore >= 70 ? 'why-flagged' : 'why-flagged warning';
+            
+            document.getElementById('fraudReasons').innerHTML = t.riskFactors.length > 0 
+                ? t.riskFactors.map(f => `
+                    <li>
+                        <i class="${f.icon}"></i>
+                        <div class="factor-text">
+                            <div class="factor-title">${f.title}</div>
+                            <div class="factor-detail">${f.detail}</div>
+                        </div>
+                        <span class="factor-score ${t.riskColor}">+${f.score}</span>
+                    </li>
+                `).join('')
+                : '<li><i class="fas fa-check"></i> No major risk factors detected</li>';
+
+            // Update confirm screen
+            document.getElementById('confirmMerchant').textContent = t.merchant;
+            document.getElementById('confirmAmount').textContent = `$${t.amount.toFixed(2)}`;
+
+            // Update analysis screen
+            document.getElementById('analysisMerchant').textContent = t.merchant;
+            document.getElementById('analysisAmount').textContent = `$${t.amount.toFixed(2)}`;
+            document.getElementById('comparisonAmount').textContent = `$${t.amount.toFixed(2)}`;
+            document.getElementById('comparisonDistance').textContent = `${t.distance} miles`;
+            document.getElementById('comparisonCategory').textContent = t.category;
+
+            // Render risk breakdown
+            renderRiskBreakdown(t);
+
+            showScreen('screen-fraud-alert');
+        }
+
+        function renderRiskBreakdown(t) {
+            const container = document.getElementById('riskBreakdown');
+            const b = t.riskBreakdown;
+
+            const items = [
+                { label: 'Amount Risk', icon: 'fas fa-dollar-sign', data: b.amount, detail: `$${t.amount.toFixed(2)} (${(t.amount / userProfile.avgSpending).toFixed(1)}x avg)` },
+                { label: 'Location Risk', icon: 'fas fa-map-marker-alt', data: b.location, detail: `${t.distance} miles from home` },
+                { label: 'Time Risk', icon: 'fas fa-clock', data: b.time, detail: `Transaction at ${t.hour}:00` },
+                { label: 'Merchant Risk', icon: 'fas fa-store', data: b.merchant, detail: `${t.category} category` },
+                { label: 'Velocity Risk', icon: 'fas fa-tachometer-alt', data: b.velocity, detail: 'Recent activity pattern' }
+            ];
+
+            container.innerHTML = items.map(item => {
+                const riskClass = item.data.score >= 70 ? 'danger' : item.data.score >= 40 ? 'warning' : 'success';
+                return `
+                    <div class="risk-item">
+                        <div class="risk-item-header">
+                            <span class="label"><i class="${item.icon}"></i> ${item.label}</span>
+                            <span class="percentage ${riskClass}">${item.data.score}%</span>
+                        </div>
+                        <div class="risk-bar">
+                            <div class="risk-bar-fill ${riskClass}" style="width: ${item.data.score}%"></div>
+                        </div>
+                        <p>${item.detail} → Weighted: +${item.data.weighted} pts</p>
+                    </div>
+                `;
+            }).join('');
+
+            // Full formula
+            document.getElementById('fullFormula').innerHTML = `
+                <span class="highlight">Amount:</span> min(100, ${t.amount.toFixed(2)} / 48.5 × 20) = <span class="value">${b.amount.score}</span><br>
+                <span class="highlight">Location:</span> min(100, ${t.distance} / 20) = <span class="value">${b.location.score}</span><br>
+                <span class="highlight">Time:</span> hour ${t.hour} check = <span class="value">${b.time.score}</span><br>
+                <span class="highlight">Merchant:</span> ${t.category} base = <span class="value">${b.merchant.score}</span><br>
+                <span class="highlight">Velocity:</span> recent txns × 15 = <span class="value">${b.velocity.score}</span><br><br>
+                <span class="highlight">TOTAL:</span> (${b.amount.score}×.25)+(${b.location.score}×.25)+(${b.time.score}×.15)+(${b.merchant.score}×.20)+(${b.velocity.score}×.15) = <span class="value">${t.riskScore}</span>
+            `;
+        }
+
+        function approveTransaction() {
+            if (!currentAlert) return;
+
+            currentAlert.status = 'approved';
+            currentAlert.riskColor = 'success';
+            currentAlert = null;
+            updateUI();
+            showScreen('screen-success-approve');
+        }
+
+        function blockTransaction() {
+            if (!currentAlert) return;
+
+            currentAlert.status = 'blocked';
+            balance += currentAlert.amount; // Refund
+            blockedAmount += currentAlert.amount;
+            currentAlert = null;
+            updateUI();
+            showScreen('screen-success-block');
+        }
+
+        // ============================================
+        // HELPERS
+        // ============================================
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            document.getElementById(screenId).scrollTop = 0;
+        }
+
+        function showToast(message, icon = 'info-circle') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.querySelector('i').className = `fas fa-${icon}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function showProcessing(show) {
+            document.getElementById('processing').classList.toggle('show', show);
+        }
+
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff/60000)} min ago`;
+            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            renderTransactions();
+        }
+
+        function filterTransactions() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('allTransactions');
+
+            const filtered = transactions.filter(t => 
+                t.merchant.toLowerCase().includes(term) || 
+                t.location.toLowerCase().includes(term)
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>No results</p></div>`;
+            } else {
+                container.innerHTML = filtered.map(t => createTransactionCard(t)).join('');
+            }
+        }
+
+        function resetApp() {
+            transactions = [];
+            currentAlert = null;
+            balance = 12847.50;
+            blockedAmount = 0;
+            updateUI();
+            showToast('Demo reset!', 'redo');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUI();
+        });
+    </script>
 </body>
 </html>
-```
-
-### What this file does
-- Generates **fake real-time transactions**
-- Scores them with a **formula**
-- Flags suspicious ones automatically
-- Lets the user **Approve / Block / Report**
-- Shows **risk analysis** and **spending comparison**
-- Runs with **no backend at all**
-
-If you want, I can also make a **cleaner hackathon version** of this file with:
-- simpler code
-- nicer mobile UI
-- automatic popup alert modal
-- better chart-like risk bars
